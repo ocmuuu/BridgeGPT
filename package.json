@@ -1,0 +1,25 @@
+{
+  "name": "bridgegpt",
+  "version": "1.4.0",
+  "private": true,
+  "description": "BridgeGPT: browser extension + self-hosted OpenAI-compatible relay for ChatGPT (web)",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "extension",
+    "server"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w bridgegpt-extension",
+    "dev:chrome": "npm run dev -w bridgegpt-extension",
+    "dev:firefox": "npm run dev:firefox -w bridgegpt-extension",
+    "dev:server": "npm run dev -w @bridgegpt/server",
+    "build:chrome": "npm run build:chrome -w bridgegpt-extension",
+    "build:firefox": "npm run build:firefox -w bridgegpt-extension",
+    "build:server": "npm run build -w @bridgegpt/server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ocmuuu/BridgeGPT.git"
+  }
+}

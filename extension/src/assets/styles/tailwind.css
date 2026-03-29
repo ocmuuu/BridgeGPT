@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+/*
+ * BridgeGPT UI: slate neutrals + violet accent (distinct from generic blue “SaaS” panels).
+ * dark: follows prefers-color-scheme (Tailwind v4 default).
+ */
+@layer base {
+  html {
+    color-scheme: light dark;
+  }
+}
+
+@theme {
+    --animate-spin-slow: spin 20s linear infinite;
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+}

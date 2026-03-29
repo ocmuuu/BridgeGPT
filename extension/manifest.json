@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "BridgeGPT",
+  "description": "Bridge ChatGPT (web) to your apps via a self-hosted OpenAI-compatible relay.",
+  "action": {
+    "default_popup": "src/pages/popup/index.html",
+    "default_icon": {
+      "32": "icon-32.png"
+    }
+  },
+  "icons": {
+    "128": "icon-128.png"
+  },
+  "host_permissions": [
+        "http://*/*",
+        "https://*/*",
+        "<all_urls>"],
+
+  "permissions": ["alarms", "storage", "tabs"],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*"
+      ],
+      "js": [
+        "src/pages/content/index.tsx"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icon-128.png",
+        "icon-32.png"
+      ],
+      "matches": []
+    },
+    {
+      "resources": ["loader.js"],
+      "matches": ["https://chatgpt.com/*"]
+    },
+    {
+      "resources": ["src/pages/settings/index.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
