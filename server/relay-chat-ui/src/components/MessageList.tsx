@@ -68,9 +68,6 @@ export function MessageList({
         )}
         {messages.map((m) => (
           <div key={m.id} className={`msg-row ${m.role}`}>
-            <div className="msg-avatar" aria-hidden>
-              {m.role === "user" ? t.you : t.ai}
-            </div>
             <div className="msg-body">
               {m.role === "user" ? (
                 <div className="bubble user-bubble whitespace-pre-wrap">
