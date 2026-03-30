@@ -14,9 +14,17 @@ export type ChatMessage = {
   sourceModel?: string;
 };
 
-type Props = { messages: ChatMessage[]; logoUrl: string };
+type Props = {
+  messages: ChatMessage[];
+  logoUrl: string;
+  hasApiKey?: boolean;
+};
 
-export function MessageList({ messages, logoUrl }: Props) {
+export function MessageList({
+  messages,
+  logoUrl,
+  hasApiKey = true,
+}: Props) {
   const { t } = useI18n();
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +56,14 @@ export function MessageList({ messages, logoUrl }: Props) {
               decoding="async"
             />
             <h1 className="empty-title">{t.emptyTitle}</h1>
-            <p className="empty-sub">{t.emptySub}</p>
+            {hasApiKey ? (
+              <p className="empty-sub">{t.emptySub}</p>
+            ) : (
+              <div className="empty-no-key-intro">
+                <p className="empty-no-key-status">{t.emptyNoKeyStatus}</p>
+                <p className="empty-no-key-how">{t.emptyNoKeyHow}</p>
+              </div>
+            )}
           </div>
         )}
         {messages.map((m) => (

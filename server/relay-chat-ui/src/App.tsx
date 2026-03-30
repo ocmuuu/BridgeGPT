@@ -532,6 +532,27 @@ export default function App({ boot }: Props) {
               <path d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
+          <button
+            type="button"
+            className="main-header-new-chat"
+            aria-label={t.newChat}
+            disabled={!hasApiKey || busy}
+            onClick={() => void onNewChat()}
+          >
+            <svg
+              className="main-header-new-chat-icon"
+              width={22}
+              height={22}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
         </header>
         {showLocalNotice ? (
           <div className="main-local-notice" role="note">
@@ -554,7 +575,11 @@ export default function App({ boot }: Props) {
             </button>
           </div>
         ) : null}
-        <MessageList messages={messages} logoUrl={boot.logoUrl} />
+        <MessageList
+          messages={messages}
+          logoUrl={boot.logoUrl}
+          hasApiKey={hasApiKey}
+        />
         {error ? (
           <div className="main-error" role="alert" aria-live="polite">
             {error}

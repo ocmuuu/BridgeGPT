@@ -475,10 +475,16 @@ body {
 .main-mobile-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   flex-shrink: 0;
   padding: 0.35rem 0.5rem 0.35rem 0.4rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: var(--main-bg);
+}
+
+/* Mobile only: new chat on the right of the top bar (drawer closed) */
+.main-header-new-chat {
+  display: none;
 }
 
 .main-menu-btn {
@@ -597,6 +603,27 @@ body {
   color: var(--muted);
   max-width: 22rem;
   line-height: 1.5;
+}
+
+.empty-no-key-intro {
+  margin: 0.5rem 0 0;
+  max-width: 24rem;
+  text-align: center;
+}
+
+.empty-no-key-status {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fcd34d;
+  line-height: 1.45;
+}
+
+.empty-no-key-how {
+  margin: 0.45rem 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .msg-row {
@@ -942,6 +969,34 @@ body {
     height: 100%;
     min-height: 100dvh;
     width: 100%;
+  }
+
+  .main-header-new-chat {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .main-header-new-chat-icon {
+    display: block;
+  }
+
+  .main-header-new-chat:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .main-header-new-chat:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
   }
 
   /* iOS Safari zooms the viewport when focusing inputs with font-size < 16px */

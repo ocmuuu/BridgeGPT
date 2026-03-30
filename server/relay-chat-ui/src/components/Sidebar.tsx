@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { useI18n } from "../i18n/I18nProvider.js";
+import { RelaySetupHint } from "./RelaySetupHint.js";
 import type { StoredConversation } from "../storage/conversationStorage";
 import type { RelayChatBoot } from "../types/boot";
 
@@ -206,23 +207,7 @@ export function Sidebar({
         </>
       ) : null}
 
-      {!hasApiKey && (
-        <div className="sidebar-setup">
-          <p className="sidebar-setup-title">{t.setupTitle}</p>
-          <p>
-            {t.setupP1a}
-            <strong>BridgeGPT</strong>
-            {t.setupP1b}
-            <strong>{t.setupP1c}</strong>
-            {t.setupP1d}
-          </p>
-          <p>
-            {t.setupP2Before}
-            <code>?api_key=&lt;room id&gt;</code>
-            {t.setupP2After}
-          </p>
-        </div>
-      )}
+      {!hasApiKey ? <RelaySetupHint /> : null}
     </aside>
   );
 }

@@ -32,6 +32,9 @@ export type Messages = {
   closeNotice: string;
   emptyTitle: string;
   emptySub: string;
+  /** Shown when there is no api_key (empty thread) */
+  emptyNoKeyStatus: string;
+  emptyNoKeyHow: string;
   you: string;
   ai: string;
   thinking: string;
@@ -79,6 +82,9 @@ const en: Messages = {
   emptyTitle: "BridgeGPT",
   emptySub:
     "Messages relay to your signed-in ChatGPT or Gemini tab.",
+  emptyNoKeyStatus: "No api_key for this site — chat is unavailable.",
+  emptyNoKeyHow:
+    "Open the sidebar and follow the Set up card: BridgeGPT extension → Settings → Open web chat, or visit once with ?api_key=… in the URL.",
   you: "You",
   ai: "AI",
   thinking: "Thinking…",
@@ -124,6 +130,9 @@ const zh: Messages = {
   closeNotice: "关闭提示",
   emptyTitle: "BridgeGPT",
   emptySub: "消息将转发到你已登录的 ChatGPT 或 Gemini 网页标签页。",
+  emptyNoKeyStatus: "没有 api_key，对话功能不可用。",
+  emptyNoKeyHow:
+    "请打开侧栏，按「设置」里的说明操作：从 BridgeGPT 扩展「设置」→「打开网页对话」打开本页，或使用带 ?api_key= 的链接访问一次。",
   you: "你",
   ai: "AI",
   thinking: "思考中…",
