@@ -24,6 +24,7 @@
 - [Quick start](#quick-start)
 - [Verifying your setup](#verifying-your-setup)
 - [Deploying your relay](#deploying-your-relay)
+- [Server deployment (full guide)](docs/SERVER_DEPLOY.md)
 - [Configuration](#configuration)
 - [HTTP API](#http-api)
 - [npm scripts](#npm-scripts)
@@ -201,6 +202,8 @@ Open `http://127.0.0.1:3456/?api_key=YOUR_API_KEY` in a browser. Use the on-page
 
 ## Deploying your relay
 
+**Full step-by-step guide (build, PM2, systemd, nginx, TLS, upgrades): [docs/SERVER_DEPLOY.md](docs/SERVER_DEPLOY.md)** · [简体中文](docs/SERVER_DEPLOY.zh-CN.md)
+
 To run the relay on your own host (VPS, homelab, etc.):
 
 1. **Install** — Clone the repo, run `npm install` at the workspace root (same as [Quick start](#quick-start)).
@@ -209,7 +212,7 @@ To run the relay on your own host (VPS, homelab, etc.):
 4. **HTTPS** — Put **Caddy**, **nginx**, or another reverse proxy in front with TLS when clients are not on localhost; enable **WebSocket** pass-through for Socket.IO.
 5. **Extension** — Build the extension with **`VITE_API_BASE_URL`** set to your public relay URL (trailing `/`), then install that build in the browser that stays logged in to **ChatGPT and/or Gemini** (web), as you use them.
 
-See [Production](#production) and [Security](#security) for hardening notes.
+See [Production](#production) and [Security](#security) for hardening notes. For a complete production checklist, use **[docs/SERVER_DEPLOY.md](docs/SERVER_DEPLOY.md)**.
 
 ---
 
@@ -337,6 +340,7 @@ npm run start -w @bridgegpt/server
 
 ```
 bridgegpt/
+├── docs/                      # e.g. [SERVER_DEPLOY.md](docs/SERVER_DEPLOY.md)
 ├── extension/                 # Vite + CRXJS (Chrome / Firefox)
 │   ├── src/pages/background/  # Service worker, Socket.IO client
 │   ├── src/pages/content/     # chatgpt.com / gemini.google.com scripts + gemini-page (page world)

@@ -24,6 +24,7 @@
 - [快速开始](#快速开始)
 - [验证安装](#验证安装)
 - [部署自己的中继服务](#部署自己的中继服务)
+- [服务端部署（完整文档）](docs/SERVER_DEPLOY.zh-CN.md)
 - [配置](#配置)
 - [HTTP API](#http-api)
 - [npm 脚本](#npm-脚本)
@@ -201,6 +202,8 @@ curl -sS "http://127.0.0.1:3456/v1beta/models/gemini-3.1-flash:generateContent" 
 
 ## 部署自己的中继服务
 
+**完整分步说明（构建、PM2、systemd、nginx、HTTPS、升级等）：[docs/SERVER_DEPLOY.zh-CN.md](docs/SERVER_DEPLOY.zh-CN.md)** · [English](docs/SERVER_DEPLOY.md)
+
 在自有机器（VPS、家庭服务器等）上跑中继，可按下面步骤操作：
 
 1. **安装** — 克隆本仓库，在仓库根目录执行 `npm install`（与 [快速开始](#快速开始) 相同）。
@@ -209,7 +212,7 @@ curl -sS "http://127.0.0.1:3456/v1beta/models/gemini-3.1-flash:generateContent" 
 4. **HTTPS** — 若客户端不在本机，请在前面加 **Caddy**、**nginx** 等反向代理并启用 TLS；须为 Socket.IO **放行 WebSocket** 升级。
 5. **扩展** — 使用 **`VITE_API_BASE_URL`** 指向公网中继地址（带尾部 `/`）重新构建扩展，并把该构建安装到**长期登录 ChatGPT / Gemini（网页）的那台浏览器**里。
 
-加固与运维细节见 [生产环境建议](#生产环境建议) 与 [安全](#安全)。
+加固与运维细节见 [生产环境建议](#生产环境建议) 与 [安全](#安全)。更完整的生产部署清单见 **[docs/SERVER_DEPLOY.zh-CN.md](docs/SERVER_DEPLOY.zh-CN.md)**。
 
 ---
 
@@ -337,6 +340,7 @@ npm run start -w @bridgegpt/server
 
 ```
 bridgegpt/
+├── docs/                      # 如 [SERVER_DEPLOY.zh-CN.md](docs/SERVER_DEPLOY.zh-CN.md)
 ├── extension/                 # Vite + CRXJS（Chrome / Firefox）
 │   ├── src/pages/background/  # Service Worker、Socket.IO 客户端
 │   ├── src/pages/content/     # chatgpt.com / gemini.google.com 脚本与 gemini-page（页面世界）
