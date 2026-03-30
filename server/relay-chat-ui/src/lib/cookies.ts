@@ -6,7 +6,11 @@ export function getCookie(name: string): string {
   return decodeURIComponent(parts.pop()!.split(";").shift() || "");
 }
 
-export function setCookie(name: string, val: string): void {
+export function setCookie(
+  name: string,
+  val: string,
+  maxAgeSeconds: number = MAX_AGE
+): void {
   const secure = location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${name}=${encodeURIComponent(val)}; Path=/; Max-Age=${MAX_AGE}; SameSite=Lax${secure}`;
+  document.cookie = `${name}=${encodeURIComponent(val)}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax${secure}`;
 }

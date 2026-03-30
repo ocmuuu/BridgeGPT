@@ -30,6 +30,11 @@ type Props = {
   activeConversationId: string;
   onSelectSession: (id: string) => void;
   onDeleteSession: (id: string) => void | Promise<void>;
+  /** Narrow viewport: sidebar is an overlay drawer */
+  isMobileDrawer?: boolean;
+  onCloseDrawer?: () => void;
+  /** Close drawer after switching chat (ChatGPT-like) */
+  onAfterDrawerNavigate?: () => void;
 };
 
 export function Sidebar({
@@ -46,6 +51,9 @@ export function Sidebar({
   activeConversationId,
   onSelectSession,
   onDeleteSession,
+  isMobileDrawer = false,
+  onCloseDrawer,
+  onAfterDrawerNavigate,
 }: Props) {
   const models =
     backend === "openai" ? boot.openaiModels : boot.geminiModels;
@@ -55,16 +63,19 @@ export function Sidebar({
   );
 
   return (
-    <aside className="sidebar">
-      <button
-        type="button"
-        className="sidebar-new-chat"
-        disabled={!hasApiKey || busy}
-        onClick={() => void onNewChat()}
-      >
-        + New chat
-      </button>
-
+    <aside className="sidebar" id="relay-sidebar">
+      {isMobileDrawer ? (
+        <div className="sidebar-mobile-toolbar">
+          <button
+            type="button"
+            className="sidebar-mobile-close"
+            aria-label="Close menu"
+            onClick={onCloseDrawer}
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
       <div className="sidebar-brand">
         <div className="sidebar-brand-row">
           <img
@@ -81,6 +92,18 @@ export function Sidebar({
           </div>
         </div>
       </div>
+
+      <button
+        type="button"
+        className="sidebar-new-chat"
+        disabled={!hasApiKey || busy}
+        onClick={() => {
+          void onNewChat();
+          onAfterDrawerNavigate?.();
+        }}
+      >
+        + New chat
+      </button>
 
       {hasApiKey && (
         <div className="sidebar-section">
@@ -148,7 +171,10 @@ export function Sidebar({
                           : "sidebar-history-row"
                       }
                       disabled={busy}
-                      onClick={() => onSelectSession(s.id)}
+                      onClick={() => {
+                        onSelectSession(s.id);
+                        onAfterDrawerNavigate?.();
+                      }}
                     >
                       <span className="sidebar-history-title">{s.title}</span>
                       <span className="sidebar-history-meta">

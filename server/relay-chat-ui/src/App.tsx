@@ -18,6 +18,8 @@ import type { RelayChatBoot } from "./types/boot";
 const SS_BACKEND = "bridgegpt_relay_chat_backend";
 const SS_MODEL_OPENAI = "bridgegpt_relay_chat_model_openai";
 const SS_MODEL_GEMINI = "bridgegpt_relay_chat_model_gemini";
+/** Cookie: user dismissed the “local only” banner; ~10y Max-Age set on dismiss. */
+const COOKIE_LOCAL_NOTICE_DISMISSED = "bridgegpt_relay_chat_local_notice_dismissed";
 
 function ssGet(k: string): string | null {
   try {
@@ -68,6 +70,23 @@ function newConversationId(): string {
   return typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : `c-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+const MOBILE_NAV_MQ = "(max-width: 767px)";
+
+function useMobileNavLayout(): boolean {
+  const [mobile, setMobile] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia(MOBILE_NAV_MQ).matches;
+  });
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_NAV_MQ);
+    const onChange = () => setMobile(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return mobile;
 }
 
 function messagesToTurns(messages: ChatMessage[]): StoredTurn[] {
@@ -416,8 +435,54 @@ export default function App({ boot }: Props) {
     model,
   ]);
 
+  const [showLocalNotice, setShowLocalNotice] = useState(() => {
+    return getCookie(COOKIE_LOCAL_NOTICE_DISMISSED) !== "1";
+  });
+
+  const isMobileNav = useMobileNavLayout();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isMobileNav) setMobileNavOpen(false);
+  }, [isMobileNav]);
+
+  useEffect(() => {
+    if (!isMobileNav || !mobileNavOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileNavOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isMobileNav, mobileNavOpen]);
+
+  useEffect(() => {
+    if (!isMobileNav || !mobileNavOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isMobileNav, mobileNavOpen]);
+
+  const closeMobileNav = useCallback(() => setMobileNavOpen(false), []);
+  const afterMobileDrawerNav = useCallback(() => {
+    if (isMobileNav) setMobileNavOpen(false);
+  }, [isMobileNav]);
+
   return (
-    <div className="app-shell">
+    <div
+      className={
+        isMobileNav && mobileNavOpen ? "app-shell mobile-nav-open" : "app-shell"
+      }
+    >
+      <button
+        type="button"
+        className="sidebar-backdrop"
+        aria-label="Close menu"
+        aria-hidden={!(isMobileNav && mobileNavOpen)}
+        tabIndex={isMobileNav && mobileNavOpen ? undefined : -1}
+        onClick={closeMobileNav}
+      />
       <Sidebar
         boot={boot}
         hasApiKey={hasApiKey}
@@ -432,18 +497,58 @@ export default function App({ boot }: Props) {
         activeConversationId={activeConversationId}
         onSelectSession={onSelectSession}
         onDeleteSession={onDeleteSession}
+        isMobileDrawer={isMobileNav}
+        onCloseDrawer={closeMobileNav}
+        onAfterDrawerNavigate={afterMobileDrawerNav}
       />
       <main className="main-panel">
-        <div className="main-local-notice" role="note">
-          <span className="main-local-notice-icon" aria-hidden>
-            ●
-          </span>
-          <p className="main-local-notice-text">
-            <strong>Local only.</strong> Conversation history stays in this
-            browser (Chrome local storage / Local Storage). This relay server
-            does not persist your chats.
-          </p>
-        </div>
+        <header className="main-mobile-header">
+          <button
+            type="button"
+            className="main-menu-btn"
+            aria-label="Open menu"
+            aria-expanded={mobileNavOpen}
+            aria-controls="relay-sidebar"
+            onClick={() => setMobileNavOpen(true)}
+          >
+            <svg
+              className="main-menu-icon"
+              width={22}
+              height={22}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden
+            >
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </header>
+        {showLocalNotice ? (
+          <div className="main-local-notice" role="note">
+            <span className="main-local-notice-icon" aria-hidden>
+              ●
+            </span>
+            <p className="main-local-notice-text">
+              <strong>Local only.</strong> Conversation history stays in this
+              browser (Chrome local storage / Local Storage). This relay server
+              does not persist your chats.
+            </p>
+            <button
+              type="button"
+              className="main-local-notice-dismiss"
+              aria-label="Close notice"
+              onClick={() => {
+                setCookie(COOKIE_LOCAL_NOTICE_DISMISSED, "1", 31536000 * 10);
+                setShowLocalNotice(false);
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ) : null}
         <MessageList messages={messages} logoUrl={boot.logoUrl} />
         {error ? (
           <div className="main-error" role="alert">
