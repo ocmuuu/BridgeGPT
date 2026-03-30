@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BridgeGPT relay chat (dev)</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="application/json" id="relay-chat-boot">
+      {
+        "cookieName": "bridgegpt_api_key",
+        "sseBlockSep": "\n\n",
+        "sseLineSep": "\n",
+        "openaiModels": ["gpt-5", "gpt-5-mini"],
+        "geminiModels": ["gemini-3.1-flash", "gemini-3.1-pro", "gemini-3.1"],
+        "initialUserMessage": "",
+        "model": "gpt-5",
+        "backend": "openai",
+        "geminiModel": "gemini-3.1-flash"
+      }
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
