@@ -1,5 +1,11 @@
 <div align="center">
-  <img src="extension/public/icon-128.png" alt="BridgeGPT" width="128" height="128" />
+  <img
+    src="https://raw.githubusercontent.com/ocmuuu/BridgeGPT/main/server/public/images/logo.png"
+    alt="BridgeGPT"
+    width="128"
+    height="128"
+    style="max-width: 100%; height: auto; max-height: 128px;"
+  />
   <h1>BridgeGPT</h1>
   <p><strong>自托管中继：通过 OpenAI / Gemini 风格的 HTTP API 驱动浏览器中的 <em>ChatGPT</em> 或 <em>Google Gemini</em> 网页版</strong></p>
   <p>浏览器扩展 + 小型 Node 服务。中继与浏览器都由你掌控，不依赖第三方托管桥接。</p>

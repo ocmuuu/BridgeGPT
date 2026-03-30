@@ -1,5 +1,11 @@
 <div align="center">
-  <img src="extension/public/icon-128.png" alt="BridgeGPT" width="128" height="128" />
+  <img
+    src="https://raw.githubusercontent.com/ocmuuu/BridgeGPT/main/server/public/images/logo.png"
+    alt="BridgeGPT"
+    width="128"
+    height="128"
+    style="max-width: 100%; height: auto; max-height: 128px;"
+  />
   <h1>BridgeGPT</h1>
   <p><strong>Self-hosted relay: drive <em>ChatGPT</em> or <em>Google Gemini</em> in the browser through OpenAI- and Gemini-style HTTP APIs</strong></p>
   <p>Browser extension + small Node server. You control the relay and the browser—no dependency on a third-party hosted bridge.</p>
