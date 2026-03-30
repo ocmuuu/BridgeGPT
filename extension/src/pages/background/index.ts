@@ -8,7 +8,12 @@ import {
   relayBaseFromStoredString,
   RELAY_SERVER_STORAGE_KEY,
 } from "@src/config";
-const chatgptBaseUrl = "https://chatgpt.com/";
+import {
+  normalizeWebProviderId,
+  tabUrlMatchesProvider,
+  WEB_PROVIDERS,
+  type WebProviderId,
+} from "@src/webProviders/config";
 
 /**
  * Broadcast to extension pages (popup/settings). When none are open, Chrome sets
@@ -156,37 +161,50 @@ const getOpenAIClientConfig = async (): Promise<OpenAIClientConfig> => {
   return { v1BaseUrl: await openAiV1BaseUrl(), apiKey };
 };
 
-const CHATGPT_TAB_SESSION_KEY = "bridgegptChatgptTabId";
-
-let tabId: undefined | number;
+/** Last-used tab per provider (memory + session storage). */
+const tabIdByProvider: Partial<Record<WebProviderId, number>> = {};
 let socket: Socket | undefined;
 
-async function rememberChatgptTab(id: number): Promise<void> {
-  tabId = id;
-  await chrome.storage.session.set({ [CHATGPT_TAB_SESSION_KEY]: id });
+async function rememberProviderTab(
+  provider: WebProviderId,
+  id: number
+): Promise<void> {
+  tabIdByProvider[provider] = id;
+  const key = WEB_PROVIDERS[provider].sessionTabKey;
+  await chrome.storage.session.set({ [key]: id });
 }
 
-/** Reuse in-memory tab id, session storage, or an existing chatgpt.com tab to avoid opening a new one each time. */
-async function resolveChatgptTabId(): Promise<number | undefined> {
-  if (typeof tabId === "number") {
-    const t = await chrome.tabs.get(tabId).catch(() => null);
-    if (t?.url?.startsWith("https://chatgpt.com/")) return tabId;
+/** Reuse in-memory tab id, session storage, or any matching tab for this provider. */
+async function resolveProviderTabId(
+  provider: WebProviderId
+): Promise<number | undefined> {
+  const cfg = WEB_PROVIDERS[provider];
+
+  const mem = tabIdByProvider[provider];
+  if (typeof mem === "number") {
+    const t = await chrome.tabs.get(mem).catch(() => null);
+    if (tabUrlMatchesProvider(t?.url, provider)) return mem;
   }
-  const session = await chrome.storage.session.get(CHATGPT_TAB_SESSION_KEY);
-  const stored = session[CHATGPT_TAB_SESSION_KEY] as number | undefined;
+
+  const session = await chrome.storage.session.get(cfg.sessionTabKey);
+  const stored = session[cfg.sessionTabKey] as number | undefined;
   if (typeof stored === "number") {
     const t = await chrome.tabs.get(stored).catch(() => null);
-    if (t?.url?.startsWith("https://chatgpt.com/")) {
-      tabId = stored;
+    if (tabUrlMatchesProvider(t?.url, provider)) {
+      tabIdByProvider[provider] = stored;
       return stored;
     }
   }
-  const tabs = await chrome.tabs.query({ url: "https://chatgpt.com/*" });
-  const first = tabs.find((x) => x.id !== undefined);
-  if (first?.id !== undefined) {
-    await rememberChatgptTab(first.id);
-    return first.id;
+
+  for (const pattern of cfg.tabsQueryPatterns) {
+    const tabs = await chrome.tabs.query({ url: pattern });
+    const first = tabs.find((x) => x.id !== undefined);
+    if (first?.id !== undefined) {
+      await rememberProviderTab(provider, first.id);
+      return first.id;
+    }
   }
+
   return undefined;
 }
 
@@ -359,11 +377,22 @@ async function connectWS() {
         msg && typeof msg === "object" && "route" in msg
           ? String((msg as { route?: unknown }).route)
           : "?";
-      console.log("[BridgeGPT] serverMessage from relay route=", route);
+      const provider = normalizeWebProviderId(
+        msg && typeof msg === "object" && "provider" in msg
+          ? (msg as { provider?: unknown }).provider
+          : "chatgpt"
+      );
+      const pcfg = WEB_PROVIDERS[provider];
+      console.log(
+        "[BridgeGPT] serverMessage route=",
+        route,
+        "provider=",
+        pcfg.id
+      );
 
-      const deliver = (tabId: number, attempt: "primary" | "retry") => {
+      const deliver = (targetTabId: number, attempt: "primary" | "retry") => {
         chrome.tabs.sendMessage(
-          tabId,
+          targetTabId,
           { type: "ask_question", content: msg },
           () => {
             const err = chrome.runtime.lastError;
@@ -372,7 +401,7 @@ async function connectWS() {
                 "[BridgeGPT] tabs.sendMessage:",
                 err.message,
                 "tabId=",
-                tabId,
+                targetTabId,
                 "attempt=",
                 attempt
               );
@@ -380,13 +409,15 @@ async function connectWS() {
                 attempt === "primary" &&
                 isTabsMessageNoReceiver(err.message)
               ) {
-                console.log("[BridgeGPT] Opening ChatGPT tab and retrying…");
+                console.log(
+                  `[BridgeGPT] Opening ${pcfg.label} tab and retrying…`
+                );
                 chrome.tabs.create(
-                  { url: chatgptBaseUrl, active: true },
+                  { url: pcfg.startUrl, active: true },
                   (tab) => {
                     const id = tab?.id;
                     if (id === undefined) return;
-                    void rememberChatgptTab(id);
+                    void rememberProviderTab(provider, id);
                     setTimeout(() => deliver(id, "retry"), 3500);
                   }
                 );
@@ -395,7 +426,7 @@ async function connectWS() {
             }
             console.log(
               "[BridgeGPT] ask_question delivered tabId=",
-              tabId,
+              targetTabId,
               "attempt=",
               attempt
             );
@@ -403,18 +434,15 @@ async function connectWS() {
         );
       };
 
-      const targetTabId = await resolveChatgptTabId();
+      const targetTabId = await resolveProviderTabId(provider);
       if (targetTabId === undefined) {
-        console.log("[BridgeGPT] No ChatGPT tab; creating tab");
-        chrome.tabs.create(
-          { url: chatgptBaseUrl, active: true },
-          (tab) => {
-            const id = tab?.id;
-            if (id === undefined) return;
-            void rememberChatgptTab(id);
-            setTimeout(() => deliver(id, "retry"), 3500);
-          }
-        );
+        console.log(`[BridgeGPT] No ${pcfg.label} tab; creating tab`);
+        chrome.tabs.create({ url: pcfg.startUrl, active: true }, (tab) => {
+          const id = tab?.id;
+          if (id === undefined) return;
+          void rememberProviderTab(provider, id);
+          setTimeout(() => deliver(id, "retry"), 3500);
+        });
       } else {
         deliver(targetTabId, "primary");
       }

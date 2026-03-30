@@ -1,66 +1,14 @@
 import { useEffect, useRef } from "react";
+import { buildWebPromptFromApiBody } from "../../shared/promptFromBody";
+import type {
+  AskQuestionPayload,
+  QuestionAnswerPayload,
+} from "../../shared/relayTypes";
 
-function normalizeMessageContent(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((part) => {
-        if (typeof part === "string") return part;
-        if (part && typeof part === "object" && "text" in part) {
-          return String((part as { text?: unknown }).text ?? "");
-        }
-        return "";
-      })
-      .join("");
-  }
-  if (content && typeof content === "object") return JSON.stringify(content);
-  return String(content ?? "");
-}
+export type { QuestionAnswerPayload };
 
-/** Fallback when older relays omit promptForChatgpt (keep in sync with server buildPromptForChatgptWeb). */
-function buildChatPromptFromApiBody(route: string, body: unknown): string {
-  if (
-    route === "/v1/chat/completions" &&
-    body &&
-    typeof body === "object" &&
-    "messages" in body
-  ) {
-    const msgs = (body as { messages?: unknown }).messages;
-    if (Array.isArray(msgs) && msgs.length > 0) {
-      for (let i = msgs.length - 1; i >= 0; i--) {
-        const m = msgs[i];
-        if (!m || typeof m !== "object") continue;
-        const role = String((m as { role?: string }).role ?? "").toLowerCase();
-        if (role !== "user") continue;
-        const text = normalizeMessageContent(
-          (m as { content?: unknown }).content
-        ).trim();
-        if (text) return text;
-      }
-      const parts: string[] = [];
-      for (const m of msgs) {
-        if (!m || typeof m !== "object") continue;
-        const text = normalizeMessageContent(
-          (m as { content?: unknown }).content
-        ).trim();
-        if (text) parts.push(text);
-      }
-      if (parts.length > 0) return parts.join("\n\n");
-    }
-  }
-  return `Route: ${route}\nPayload: ${JSON.stringify(body)}`;
-}
-
-type AskQuestionContent = {
-  route: string;
-  body: unknown;
-  promptForChatgpt?: string;
-};
-
-export type QuestionAnswerPayload = Record<string, unknown>;
-
-export const ChatGPT = () => {
-  console.log("Chatgpt script loaded");
+export const ChatgptPage = () => {
+  console.log("[BridgeGPT] ChatGPT provider loaded");
 
   const lastRelayRef = useRef<{ route: string; body: unknown } | null>(null);
 
@@ -105,11 +53,10 @@ export const ChatGPT = () => {
     };
 
     const onRuntimeMessage = (
-      msg: { type?: string; content?: AskQuestionContent },
+      msg: { type?: string; content?: AskQuestionPayload },
       _sender: chrome.runtime.MessageSender,
       sendResponse: (r?: unknown) => void
     ): boolean => {
-      console.log("incoming message", msg);
       if (msg.type !== "ask_question" || !msg.content) {
         return false;
       }
@@ -128,7 +75,7 @@ export const ChatGPT = () => {
       const text =
         typeof c.promptForChatgpt === "string" && c.promptForChatgpt.length > 0
           ? c.promptForChatgpt
-          : buildChatPromptFromApiBody(c.route, c.body);
+          : buildWebPromptFromApiBody(c.route, c.body);
       contentArea.innerHTML = text;
       inputElement.value = text;
       window.setTimeout(() => {
@@ -156,5 +103,5 @@ export const ChatGPT = () => {
     };
   }, []);
 
-  return <div></div>;
+  return <div />;
 };

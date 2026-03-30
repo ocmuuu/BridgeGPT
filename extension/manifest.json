@@ -20,7 +20,9 @@
   "content_scripts": [
     {
       "matches": [
-        "https://chatgpt.com/*"
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://gemini.google.com/*"
       ],
       "js": [
         "src/pages/content/index.tsx"
@@ -37,7 +39,14 @@
     },
     {
       "resources": ["loader.js"],
-      "matches": ["https://chatgpt.com/*"]
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ]
+    },
+    {
+      "resources": ["gemini-page.js"],
+      "matches": ["https://gemini.google.com/*"]
     },
     {
       "resources": ["src/pages/settings/index.html"],

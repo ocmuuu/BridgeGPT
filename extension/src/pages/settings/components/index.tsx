@@ -7,6 +7,7 @@ import {
   Chrome,
   Link2,
 } from "lucide-react";
+import { ApiKeySection } from "./apiKey";
 import { ApiUrlSection } from "./apiUrl";
 import { ConnectButton } from "./connect";
 import { RelayServerSection } from "./relayServer";
@@ -93,6 +94,35 @@ export const SettingPage = () => {
         </div>
 
         <RelayServerSection />
+
+        <ApiKeySection />
+
+        <div className="bg-white border border-slate-200/90 rounded-xl p-6 mb-6 shadow-sm shadow-slate-900/5 dark:bg-slate-900/90 dark:border-slate-700 dark:shadow-black/20">
+          <div className="flex items-center gap-3 mb-4">
+            <Link2 className="text-slate-700 dark:text-slate-300" size={24} />
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+              Connection options
+            </h2>
+          </div>
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={keepLongConnection}
+              onChange={(e) => onKeepLongChange(e.target.checked)}
+              className="mt-1 size-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-violet-600 focus:ring-violet-500"
+            />
+            <div>
+              <span className="font-medium text-slate-900 dark:text-slate-100">Keep alive</span>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                When enabled, the setting is stored locally and every 30 seconds
+                the extension checks the relay WebSocket. If disconnected, it
+                tries to reconnect (alarms can wake the MV3 service worker; you
+                do not need to keep the settings tab open).
+              </p>
+            </div>
+          </label>
+        </div>
+
         {/* How It Works Section */}
         <div className="bg-white border border-slate-200/90 rounded-xl p-6 mb-6 shadow-sm shadow-slate-900/5 dark:bg-slate-900/90 dark:border-slate-700 dark:shadow-black/20">
           <div className="flex items-start gap-3 mb-4">
@@ -154,32 +184,6 @@ export const SettingPage = () => {
           </div>
         </div>
         <ApiUrlSection />
-
-        <div className="mt-6 bg-white border border-slate-200/90 rounded-xl p-6 shadow-sm shadow-slate-900/5 dark:bg-slate-900/90 dark:border-slate-700 dark:shadow-black/20">
-          <div className="flex items-center gap-3 mb-4">
-            <Link2 className="text-slate-700 dark:text-slate-300" size={24} />
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-              Connection options
-            </h2>
-          </div>
-          <label className="flex items-start gap-3 cursor-pointer group">
-            <input
-              type="checkbox"
-              checked={keepLongConnection}
-              onChange={(e) => onKeepLongChange(e.target.checked)}
-              className="mt-1 size-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-violet-600 focus:ring-violet-500"
-            />
-            <div>
-              <span className="font-medium text-slate-900 dark:text-slate-100">Keep alive</span>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-                When enabled, the setting is stored locally and every 30 seconds
-                the extension checks the relay WebSocket. If disconnected, it
-                tries to reconnect (alarms can wake the MV3 service worker; you
-                do not need to keep the settings tab open).
-              </p>
-            </div>
-          </label>
-        </div>
 
         <p className="text-center mt-8 text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-4xl mx-auto text-pretty">
           If you work with sensitive content, consider{" "}

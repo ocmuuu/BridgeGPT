@@ -1,20 +1,21 @@
-import { createRoot } from 'react-dom/client';
-import './style.css' 
-import { ChatGPT } from './components/chatgpt';
-console.log("BridgeGPT content script loaded");
+import { createRoot } from "react-dom/client";
+import "./style.css";
+import { resolveContentProvider } from "./webProviders/registry";
 
-const div = document.createElement('div');
-div.id = '__root';
+console.log("[BridgeGPT] content script", location.href);
+
+const div = document.createElement("div");
+div.id = "__root";
 document.body.appendChild(div);
 
-const rootContainer = document.querySelector('#__root');
+const rootContainer = document.querySelector("#__root");
 if (!rootContainer) throw new Error("Can't find Content root element");
-const root = createRoot(rootContainer);
-root.render(
-  <ChatGPT />
-);
 
-try {
-} catch (e) {
-  console.error(e);
+const spec = resolveContentProvider(location.href);
+if (!spec) {
+  console.warn("[BridgeGPT] Unsupported host; no provider:", location.href);
+} else {
+  const root = createRoot(rootContainer);
+  const Bridge = spec.Component;
+  root.render(<Bridge />);
 }
