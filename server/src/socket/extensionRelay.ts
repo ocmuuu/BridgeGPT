@@ -1,8 +1,9 @@
 import type { Application } from "express";
 import type { Server } from "socket.io";
 
+/** Allow tab open + Gemini UI wait + ~120s poll without losing the race to the client. */
 const REQUEST_TIMEOUT_MS =
-  Number(process.env.RELAY_REQUEST_TIMEOUT_MS) || 120_000;
+  Number(process.env.RELAY_REQUEST_TIMEOUT_MS) || 150_000;
 
 type Pending = {
   resolve: (value: unknown) => void;
