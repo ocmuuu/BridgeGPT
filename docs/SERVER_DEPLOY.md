@@ -157,33 +157,122 @@ sudo systemctl enable --now bridgegpt-relay.service
 
 ## 7. TLS and reverse proxy (public internet)
 
-Expose **HTTPS** to clients. Terminate TLS at **nginx** (or Caddy) and proxy to `http://127.0.0.1:3456`.
+Expose **HTTPS** to clients. Terminate TLS in front of the relay and proxy to **`http://127.0.0.1:3456`** (or whatever `PORT` you set).
 
-**nginx** example — WebSocket headers are required for Socket.IO:
+**Requirements for BridgeGPT**
+
+- **WebSocket upgrade** — Socket.IO must receive `Upgrade` / `Connection` correctly (see nginx `map` below; Caddy’s `reverse_proxy` handles this by default).
+- **Long timeouts** — Relay waits for the browser extension (default **150s**); set proxy read/send timeouts **above** that (e.g. **300s**).
+- **SSE** — Optional: disable buffering so streamed chat completions flush reliably.
+
+Replace **`relay.example.com`** with your domain. Keep the Node relay bound to **localhost** only if the proxy is on the same machine.
+
+**Firewall:** If the proxy listens on **443**, you usually **do not** publish port **3456** on the public interface.
+
+---
+
+### 7.1 nginx
+
+Put the following inside **`http { ... }`** (e.g. `/etc/nginx/sites-available/bridgegpt` included from `nginx.conf`). The **`map`** block should appear **once** per `http` context (if you already have one for WebSockets, merge it).
 
 ```nginx
+# Once per http {} block — correct Connection header for WebSocket vs normal requests
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# Optional: HTTP → HTTPS redirect
+server {
+    listen 80;
+    listen [::]:80;
+    server_name relay.example.com;
+    return 301 https://$host$request_uri;
+}
+
 server {
     listen 443 ssl http2;
+    listen [::]:443 ssl http2;
     server_name relay.example.com;
 
-    # ssl_certificate ... ssl_certificate_key ...
+    # After certbot (nginx plugin) or manual certs:
+    ssl_certificate     /etc/letsencrypt/live/relay.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/relay.example.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     location / {
         proxy_pass http://127.0.0.1:3456;
         proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
+
+        proxy_set_header Upgrade           $http_upgrade;
+        proxy_set_header Connection        $connection_upgrade;
+
+        proxy_connect_timeout  60s;
+        proxy_send_timeout    300s;
+        proxy_read_timeout    300s;
+
+        proxy_buffering off;
+        proxy_cache_bypass $http_upgrade;
     }
 }
 ```
 
-Issue certificates with **Let’s Encrypt** (e.g. `certbot` with the nginx plugin).
+**Certificates (Let’s Encrypt):**
 
-**Firewall:** If nginx listens on 443, you often **do not** expose port **3456** publicly — only localhost.
+```bash
+sudo certbot --nginx -d relay.example.com
+```
+
+Then reload nginx:
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+---
+
+### 7.2 Caddy v2
+
+Minimal **`Caddyfile`** (Caddy obtains and renews TLS automatically when ports **80/443** are reachable and DNS points to this host):
+
+```caddyfile
+relay.example.com {
+    reverse_proxy 127.0.0.1:3456 {
+        # Long completions / extension round-trip (requires Caddy 2.6+)
+        transport http {
+            read_timeout 300s
+            write_timeout 300s
+        }
+    }
+}
+```
+
+On **Caddy &lt; 2.6**, drop the `transport http { ... }` block and use only `reverse_proxy 127.0.0.1:3456` (defaults may suffice for many cases; upgrade Caddy if you hit timeouts).
+
+If you need HTTP→HTTPS only on Caddy’s side, the site block above already listens on 443 by default; for a separate redirect from `:80`, Caddy usually issues HTTP-01 and redirects automatically.
+
+Reload:
+
+```bash
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+```
+
+---
+
+### 7.3 Checklist
+
+| Check | Command / note |
+|--------|----------------|
+| Relay up | `curl -sS http://127.0.0.1:3456/health` |
+| Through proxy | `curl -sS https://relay.example.com/health` |
+| Extension / Socket.IO | Connect from extension; if HTTP works but live connection fails, recheck **Upgrade** headers (nginx `map`) |
 
 ---
 
