@@ -11,7 +11,7 @@ export default function Popup() {
     <div className="min-h-[280px] flex flex-col bg-gradient-to-b from-slate-100 via-white to-violet-50/50 dark:from-violet-950 dark:via-slate-900 dark:to-slate-950">
       <div className="px-4 pt-3.5 pb-2 flex items-center gap-2.5">
         <img
-          src="../../../icon-32.png"
+          src="/icon-128.png"
           alt=""
           className="w-9 h-9 rounded-lg shadow-md shadow-slate-900/10 ring-1 ring-slate-200/80 dark:shadow-lg dark:shadow-violet-950/50 dark:ring-white/10"
           width={36}

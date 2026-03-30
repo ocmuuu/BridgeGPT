@@ -34,8 +34,10 @@ export const SettingPage = () => {
         <div className="mb-8">
           <div className="flex items-end gap-3 mb-2">
             <img
-              src="../../../icon-32.png"
+              src="/icon-128.png"
               alt="BridgeGPT"
+              width={128}
+              height={128}
               className="w-16 h-16 rounded-2xl shadow-lg shadow-slate-900/10 ring-1 ring-slate-200/80 dark:shadow-black/30 dark:ring-slate-700"
             />
             <h1 className="text-4xl font-bold text-slate-900 tracking-tight dark:text-slate-100">
