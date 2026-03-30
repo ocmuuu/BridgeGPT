@@ -202,7 +202,6 @@ body {
   flex-shrink: 0;
   width: 2.25rem;
   height: 2.25rem;
-  border-radius: 0.5rem;
   object-fit: contain;
   background: rgba(255, 255, 255, 0.04);
 }
@@ -215,6 +214,7 @@ body {
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: -0.02em;
+  margin-top: 0.2rem;
 }
 
 .sidebar-tag {
@@ -222,7 +222,6 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
-  margin-top: 0.2rem;
 }
 
 .sidebar-section {
@@ -375,7 +374,6 @@ body {
   width: 4.5rem;
   height: 4.5rem;
   margin-bottom: 1rem;
-  border-radius: 0.85rem;
   object-fit: contain;
   background: rgba(255, 255, 255, 0.04);
 }
@@ -411,7 +409,6 @@ body {
   flex-shrink: 0;
   width: 2rem;
   height: 2rem;
-  border-radius: 0.35rem;
   background: #3f3f3f;
   display: flex;
   align-items: center;

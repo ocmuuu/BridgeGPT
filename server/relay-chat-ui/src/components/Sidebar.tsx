@@ -76,8 +76,8 @@ export function Sidebar({
             decoding="async"
           />
           <div className="sidebar-brand-text">
-            <div className="sidebar-logo">BridgeGPT</div>
             <div className="sidebar-tag">Web relay</div>
+            <div className="sidebar-logo">BridgeGPT</div>
           </div>
         </div>
       </div>

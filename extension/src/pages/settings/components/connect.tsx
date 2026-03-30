@@ -121,7 +121,9 @@ export const ConnectButton = ({ popup }: { popup?: boolean }) => {
         })}
       >
         <div
-          className={clsx("flex items-center gap-6", {
+          className={clsx("flex items-center", {
+            "gap-6": !popup,
+            "gap-3": popup,
             "flex-col": popup,
             "text-center": popup,
           })}
@@ -129,22 +131,34 @@ export const ConnectButton = ({ popup }: { popup?: boolean }) => {
           {/* Status Indicator */}
           <div className="flex-shrink-0">
             <div
-              className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 ${
+              className={clsx(
+                "rounded-full flex items-center justify-center transition-all duration-500",
+                popup ? "w-12 h-12 border-[3px]" : "w-16 h-16 border-4",
                 status === "connected"
-                  ? "bg-green-100 border-4 border-green-500 animate-pulse dark:bg-green-950/50 dark:border-green-500"
+                  ? "bg-green-100 border-green-500 animate-pulse dark:bg-green-950/50 dark:border-green-500"
                   : status === "pending"
-                  ? "bg-violet-100 border-4 border-violet-500 dark:bg-violet-950/50 dark:border-violet-400"
-                  : "bg-slate-100 border-4 border-slate-300 dark:bg-slate-800 dark:border-slate-600"
-              }`}
+                  ? "bg-violet-100 border-violet-500 dark:bg-violet-950/50 dark:border-violet-400"
+                  : "bg-slate-100 border-slate-300 dark:bg-slate-800 dark:border-slate-600"
+              )}
             >
               {status === "connected" && (
-                <Check className="text-green-600" size={32} strokeWidth={3} />
+                <Check
+                  className="text-green-600"
+                  size={popup ? 22 : 32}
+                  strokeWidth={3}
+                />
               )}
               {status === "pending" && (
-                <Loader2 className="text-violet-600 animate-spin" size={32} />
+                <Loader2
+                  className="text-violet-600 animate-spin"
+                  size={popup ? 22 : 32}
+                />
               )}
               {status === "disconnected" && (
-                <WifiOff className="text-slate-400 dark:text-slate-500" size={32} />
+                <WifiOff
+                  className="text-slate-400 dark:text-slate-500"
+                  size={popup ? 22 : 32}
+                />
               )}
             </div>
           </div>
@@ -152,19 +166,26 @@ export const ConnectButton = ({ popup }: { popup?: boolean }) => {
           {/* Status Info */}
           <div className="flex-1">
             <h2
-              className={`text-xl font-semibold mb-1 transition-colors ${
+              className={clsx(
+                "font-semibold transition-colors",
+                popup ? "text-base mb-0.5" : "text-xl mb-1",
                 status === "connected"
                   ? "text-green-600 dark:text-green-400"
                   : status === "pending"
                   ? "text-violet-600 dark:text-violet-400"
                   : "text-slate-900 dark:text-slate-100"
-              }`}
+              )}
             >
               {status === "connected" && "Connected"}
               {status === "pending" && "Connecting..."}
               {status === "disconnected" && "Disconnected"}
             </h2>
-            <p className="text-slate-600 dark:text-slate-400 text-sm">
+            <p
+              className={clsx(
+                "text-slate-600 dark:text-slate-400",
+                popup ? "text-xs leading-snug" : "text-sm"
+              )}
+            >
               {status === "connected" &&
                 "Your BridgeGPT connection is active and ready"}
               {status === "pending" &&
@@ -181,29 +202,31 @@ export const ConnectButton = ({ popup }: { popup?: boolean }) => {
           <button
             onClick={handleConnect}
             disabled={status === "pending"}
-            className={`flex-shrink-0 flex items-center gap-2 font-semibold py-3 px-6 rounded-lg transition-all duration-300 ${
+            className={clsx(
+              "flex-shrink-0 flex items-center gap-2 font-semibold rounded-lg transition-all duration-300",
+              popup ? "py-2 px-4 text-sm" : "py-3 px-6",
               status === "connected"
                 ? "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-200"
                 : status === "pending"
                 ? "bg-violet-600 text-white cursor-not-allowed"
                 : "bg-violet-600 hover:bg-violet-700 text-white hover:shadow-lg shadow-violet-600/25"
-            }`}
+            )}
           >
             {status === "connected" && (
               <>
-                <Wifi size={18} />
+                <Wifi size={popup ? 16 : 18} />
                 <span>Disconnect</span>
               </>
             )}
             {status === "pending" && (
               <>
-                <Loader2 className="animate-spin" size={18} />
+                <Loader2 className="animate-spin" size={popup ? 16 : 18} />
                 <span>Connecting...</span>
               </>
             )}
             {status === "disconnected" && (
               <>
-                <Wifi size={18} />
+                <Wifi size={popup ? 16 : 18} />
                 <span>Connect</span>
               </>
             )}

@@ -8,40 +8,38 @@ export default function Popup() {
   };
 
   return (
-    <div className="min-h-[280px] flex flex-col bg-gradient-to-b from-slate-100 via-white to-violet-50/50 dark:from-violet-950 dark:via-slate-900 dark:to-slate-950">
-      <div className="px-4 pt-3.5 pb-2 flex items-center gap-2.5">
-        <img
-          src="/icon-128.png"
-          alt=""
-          className="w-9 h-9 rounded-lg shadow-md shadow-slate-900/10 ring-1 ring-slate-200/80 dark:shadow-lg dark:shadow-violet-950/50 dark:ring-white/10"
-          width={36}
-          height={36}
-        />
-        <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-slate-900 tracking-tight leading-tight dark:text-white">
-            BridgeGPT
-          </p>
-          <p className="text-[11px] text-slate-600 leading-tight truncate dark:text-violet-200/80">
+    <div className="flex flex-col bg-gradient-to-b from-slate-100 via-white to-violet-50/50 dark:from-violet-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="px-4 pt-1.5 pb-0.5">
+        <div className="mb-2">
+          <div className="flex items-end gap-2 mb-1">
+            <img
+              src="/icon-128.png"
+              alt="BridgeGPT"
+              width={128}
+              height={128}
+              className="w-11 h-11"
+            />
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight leading-none dark:text-slate-100">
+              BridgeGPT
+            </h1>
+          </div>
+          <p className="text-xs text-slate-600 leading-snug dark:text-slate-400">
             Bridge Your ChatGPT Account to Your Apps
           </p>
         </div>
       </div>
 
-      <div className="flex-1 px-3 pb-3 pt-1">
-        <div className="rounded-2xl bg-white shadow-lg shadow-slate-900/10 ring-1 ring-slate-200/90 overflow-hidden dark:bg-slate-800/95 dark:shadow-xl dark:shadow-black/40 dark:ring-slate-600/80">
-          <div className="p-4">
-            <ConnectButton popup />
-          </div>
-          <div className="px-4 pb-4 flex justify-center border-t border-slate-100 pt-3 dark:border-slate-700">
-            <button
-              type="button"
-              onClick={handleEditSetting}
-              className="flex items-center gap-2 text-sm font-medium text-violet-700 hover:text-violet-900 py-2 px-4 rounded-xl border border-violet-200/80 bg-violet-50/80 hover:bg-violet-100/90 transition-colors dark:text-violet-300 dark:hover:text-violet-200 dark:border-violet-700/80 dark:bg-violet-950/60 dark:hover:bg-violet-900/50"
-            >
-              <Settings size={16} strokeWidth={2} />
-              <span>Open settings</span>
-            </button>
-          </div>
+      <div className="px-3 pb-5 pt-0">
+        <ConnectButton popup />
+        <div className="flex justify-center pt-2">
+          <button
+            type="button"
+            onClick={handleEditSetting}
+            className="flex items-center gap-2 text-sm font-medium text-violet-700 hover:text-violet-900 py-1.5 px-3 rounded-lg border border-violet-200/80 bg-violet-50/80 hover:bg-violet-100/90 transition-colors dark:text-violet-300 dark:hover:text-violet-200 dark:border-violet-700/80 dark:bg-violet-950/60 dark:hover:bg-violet-900/50"
+          >
+            <Settings size={16} strokeWidth={2} />
+            <span>Open settings</span>
+          </button>
         </div>
       </div>
     </div>

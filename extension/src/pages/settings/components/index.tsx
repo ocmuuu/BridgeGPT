@@ -38,7 +38,7 @@ export const SettingPage = () => {
               alt="BridgeGPT"
               width={128}
               height={128}
-              className="w-16 h-16 rounded-2xl shadow-lg shadow-slate-900/10 ring-1 ring-slate-200/80 dark:shadow-black/30 dark:ring-slate-700"
+              className="w-16 h-16"
             />
             <h1 className="text-4xl font-bold text-slate-900 tracking-tight dark:text-slate-100">
               BridgeGPT
