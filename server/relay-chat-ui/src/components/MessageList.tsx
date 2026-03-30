@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 
+import { useI18n } from "../i18n/I18nProvider.js";
 import { AssistantMarkdown } from "./AssistantMarkdown.js";
 
 export type ChatMessage = {
@@ -13,20 +14,21 @@ export type ChatMessage = {
   sourceModel?: string;
 };
 
-function assistantSourceLabel(
-  backend: "openai" | "gemini",
-  model: string
-): string {
-  const platform =
-    backend === "openai" ? "ChatGPT · OpenAI" : "Gemini · Google";
-  const m = model.trim();
-  return m ? `${platform} · ${m}` : platform;
-}
-
 type Props = { messages: ChatMessage[]; logoUrl: string };
 
 export function MessageList({ messages, logoUrl }: Props) {
+  const { t } = useI18n();
   const endRef = useRef<HTMLDivElement>(null);
+
+  function assistantSourceLabel(
+    backend: "openai" | "gemini",
+    model: string
+  ): string {
+    const platform =
+      backend === "openai" ? t.platformOpenAI : t.platformGemini;
+    const m = model.trim();
+    return m ? `${platform} · ${m}` : platform;
+  }
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -45,16 +47,14 @@ export function MessageList({ messages, logoUrl }: Props) {
               height={72}
               decoding="async"
             />
-            <h1 className="empty-title">BridgeGPT</h1>
-            <p className="empty-sub">
-              Messages relay to your signed-in ChatGPT or Gemini tab.
-            </p>
+            <h1 className="empty-title">{t.emptyTitle}</h1>
+            <p className="empty-sub">{t.emptySub}</p>
           </div>
         )}
         {messages.map((m) => (
           <div key={m.id} className={`msg-row ${m.role}`}>
             <div className="msg-avatar" aria-hidden>
-              {m.role === "user" ? "You" : "AI"}
+              {m.role === "user" ? t.you : t.ai}
             </div>
             <div className="msg-body">
               {m.role === "user" ? (
@@ -70,14 +70,14 @@ export function MessageList({ messages, logoUrl }: Props) {
                           className="assistant-loading"
                           role="status"
                           aria-live="polite"
-                          aria-label="Waiting for response"
+                          aria-label={t.waitingResponse}
                         >
                           <span
                             className="assistant-loading-spinner"
                             aria-hidden
                           />
                           <span className="assistant-loading-text">
-                            Thinking…
+                            {t.thinking}
                           </span>
                         </div>
                       ) : (
@@ -92,7 +92,7 @@ export function MessageList({ messages, logoUrl }: Props) {
                   )}
                   {m.sourceBackend &&
                   (!m.streaming || m.content.trim()) ? (
-                    <div className="msg-source" aria-label="Reply source">
+                    <div className="msg-source" aria-label={t.replySource}>
                       {assistantSourceLabel(
                         m.sourceBackend,
                         m.sourceModel ?? ""

@@ -1,20 +1,8 @@
+import { useMemo } from "react";
+
+import { useI18n } from "../i18n/I18nProvider.js";
 import type { StoredConversation } from "../storage/conversationStorage";
 import type { RelayChatBoot } from "../types/boot";
-
-const sessionTimeFmt = new Intl.DateTimeFormat(undefined, {
-  month: "short",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
-function formatSessionWhen(ts: number): string {
-  try {
-    return sessionTimeFmt.format(new Date(ts));
-  } catch {
-    return "";
-  }
-}
 
 type Props = {
   boot: RelayChatBoot;
@@ -33,6 +21,8 @@ type Props = {
   onCloseDrawer?: () => void;
   /** Close drawer after switching chat (ChatGPT-like) */
   onAfterDrawerNavigate?: () => void;
+  /** Desktop: sidebar visually hidden — remove from a11y tree */
+  inertDesktop?: boolean;
 };
 
 export function Sidebar({
@@ -50,16 +40,47 @@ export function Sidebar({
   isMobileDrawer = false,
   onCloseDrawer,
   onAfterDrawerNavigate,
+  inertDesktop = false,
 }: Props) {
+  const { t, intlLocale, toggleLocale, langToggleLabel, langToggleAriaLabel } =
+    useI18n();
+
+  const sessionTimeFmt = useMemo(
+    () =>
+      new Intl.DateTimeFormat(intlLocale, {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [intlLocale]
+  );
+
+  function formatSessionWhen(ts: number): string {
+    try {
+      return sessionTimeFmt.format(new Date(ts));
+    } catch {
+      return "";
+    }
+  }
+
   const orderedSessions = [...sessions].sort(
     (a, b) => b.updatedAt - a.updatedAt
   );
 
   return (
-    <aside className="sidebar" id="relay-sidebar">
+    <aside
+      className="sidebar"
+      id="relay-sidebar"
+      aria-hidden={inertDesktop ? true : undefined}
+      inert={inertDesktop ? true : undefined}
+    >
       <div className="sidebar-brand">
         <div className="sidebar-brand-head">
-          <div className="sidebar-brand-row">
+          <div
+            className="sidebar-brand-row"
+            aria-label={isMobileDrawer ? "BridgeGPT" : undefined}
+          >
             <img
               className="sidebar-logo-img"
               src={boot.logoUrl}
@@ -69,20 +90,30 @@ export function Sidebar({
               decoding="async"
             />
             <div className="sidebar-brand-text">
-              <div className="sidebar-tag">Web relay</div>
+              <div className="sidebar-tag">{t.sidebarTag}</div>
               <div className="sidebar-logo">BridgeGPT</div>
             </div>
           </div>
-          {isMobileDrawer ? (
+          <div className="sidebar-brand-actions">
             <button
               type="button"
-              className="sidebar-mobile-close"
-              aria-label="Close menu"
-              onClick={onCloseDrawer}
+              className="sidebar-lang-toggle"
+              aria-label={langToggleAriaLabel}
+              onClick={toggleLocale}
             >
-              ×
+              {langToggleLabel}
             </button>
-          ) : null}
+            {isMobileDrawer ? (
+              <button
+                type="button"
+                className="sidebar-mobile-close"
+                aria-label={t.closeMenu}
+                onClick={onCloseDrawer}
+              >
+                ×
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -95,23 +126,21 @@ export function Sidebar({
           onAfterDrawerNavigate?.();
         }}
       >
-        + New chat
+        {t.newChat}
       </button>
 
       {hasApiKey && (
         <div className="sidebar-section">
-          <div className="sidebar-label">Connection</div>
+          <div className="sidebar-label">{t.connection}</div>
           <p className="sidebar-status ok">
-            {fromUrlKey
-              ? "api_key saved from URL to cookie."
-              : "Using saved api_key cookie."}
+            {fromUrlKey ? t.connectionFromUrl : t.connectionFromCookie}
           </p>
         </div>
       )}
 
       <div className="sidebar-section">
         <label className="sidebar-label" htmlFor="sidebar-backend">
-          Backend
+          {t.backend}
         </label>
         <select
           id="sidebar-backend"
@@ -122,8 +151,8 @@ export function Sidebar({
             onBackendChange(e.target.value as "openai" | "gemini")
           }
         >
-          <option value="openai">ChatGPT · OpenAI API</option>
-          <option value="gemini">Gemini · Google API</option>
+          <option value="openai">{t.backendOpenAI}</option>
+          <option value="gemini">{t.backendGemini}</option>
         </select>
       </div>
 
@@ -131,7 +160,7 @@ export function Sidebar({
         <>
           <div className="sidebar-divider" role="separator" aria-hidden />
           <div className="sidebar-history">
-            <div className="sidebar-label">History</div>
+            <div className="sidebar-label">{t.history}</div>
             <ul className="sidebar-history-list" role="list">
               {orderedSessions.map((s) => {
                 const active = s.id === activeConversationId;
@@ -159,9 +188,9 @@ export function Sidebar({
                     <button
                       type="button"
                       className="sidebar-history-delete"
-                      title="Delete"
+                      title={t.deleteSession}
                       disabled={busy}
-                      aria-label={`Delete ${s.title}`}
+                      aria-label={t.deleteSessionAria(s.title)}
                       onClick={(e) => {
                         e.stopPropagation();
                         void onDeleteSession(s.id);
@@ -179,16 +208,18 @@ export function Sidebar({
 
       {!hasApiKey && (
         <div className="sidebar-setup">
-          <p className="sidebar-setup-title">Set up</p>
+          <p className="sidebar-setup-title">{t.setupTitle}</p>
           <p>
-            Open this page from the <strong>BridgeGPT</strong> extension:
-            Settings → <strong>Open web chat</strong> (cookie stores{" "}
-            <code>api_key</code> for this origin).
+            {t.setupP1a}
+            <strong>BridgeGPT</strong>
+            {t.setupP1b}
+            <strong>{t.setupP1c}</strong>
+            {t.setupP1d}
           </p>
           <p>
-            Or visit once with{" "}
-            <code>?api_key=&lt;room id&gt;</code> — it will be saved and
-            stripped from the URL.
+            {t.setupP2Before}
+            <code>?api_key=&lt;room id&gt;</code>
+            {t.setupP2After}
           </p>
         </div>
       )}

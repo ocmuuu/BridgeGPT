@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Composer } from "./components/Composer";
 import { MessageList, type ChatMessage } from "./components/MessageList";
 import { Sidebar } from "./components/Sidebar";
+import { useI18n } from "./i18n/I18nProvider.js";
 import { getCookie, setCookie } from "./lib/cookies";
 import { formatRelayChatHttpError } from "./lib/relayHttpError";
 import { readSseStream } from "./lib/sse";
@@ -19,6 +20,9 @@ import type { RelayChatBoot } from "./types/boot";
 const SS_BACKEND = "bridgegpt_relay_chat_backend";
 /** Cookie: user dismissed the “local only” banner; ~10y Max-Age set on dismiss. */
 const COOKIE_LOCAL_NOTICE_DISMISSED = "bridgegpt_relay_chat_local_notice_dismissed";
+/** Cookie: desktop sidebar collapsed (`1` / `0`); ~10y Max-Age. Ignored on narrow viewports. */
+const COOKIE_SIDEBAR_COLLAPSED = "bridgegpt_relay_chat_sidebar_collapsed";
+const COOKIE_TEN_YEARS = 31536000 * 10;
 
 function ssGet(k: string): string | null {
   try {
@@ -115,6 +119,7 @@ function turnsToChatMessages(
 type Props = { boot: RelayChatBoot };
 
 export default function App({ boot }: Props) {
+  const { t } = useI18n();
   const [apiKey, setApiKeyState] = useState("");
   const [fromUrlKey, setFromUrlKey] = useState(false);
   const [backend, setBackend] = useState(() => pickInitialBackend(boot));
@@ -411,6 +416,9 @@ export default function App({ boot }: Props) {
 
   const isMobileNav = useMobileNavLayout();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(
+    () => getCookie(COOKIE_SIDEBAR_COLLAPSED) === "1"
+  );
 
   useEffect(() => {
     if (!isMobileNav) setMobileNavOpen(false);
@@ -439,16 +447,38 @@ export default function App({ boot }: Props) {
     if (isMobileNav) setMobileNavOpen(false);
   }, [isMobileNav]);
 
+  const desktopSidebarHidden = !isMobileNav && desktopSidebarCollapsed;
+
+  const onMainMenuClick = useCallback(() => {
+    if (isMobileNav) {
+      setMobileNavOpen(true);
+      return;
+    }
+    setDesktopSidebarCollapsed((prev) => {
+      const next = !prev;
+      setCookie(
+        COOKIE_SIDEBAR_COLLAPSED,
+        next ? "1" : "0",
+        COOKIE_TEN_YEARS
+      );
+      return next;
+    });
+  }, [isMobileNav]);
+
+  const shellClass = [
+    "app-shell",
+    isMobileNav && mobileNavOpen ? "mobile-nav-open" : "",
+    desktopSidebarHidden ? "sidebar-collapsed-desktop" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div
-      className={
-        isMobileNav && mobileNavOpen ? "app-shell mobile-nav-open" : "app-shell"
-      }
-    >
+    <div className={shellClass}>
       <button
         type="button"
         className="sidebar-backdrop"
-        aria-label="Close menu"
+        aria-label={t.closeMenu}
         aria-hidden={!(isMobileNav && mobileNavOpen)}
         tabIndex={isMobileNav && mobileNavOpen ? undefined : -1}
         onClick={closeMobileNav}
@@ -468,16 +498,25 @@ export default function App({ boot }: Props) {
         isMobileDrawer={isMobileNav}
         onCloseDrawer={closeMobileNav}
         onAfterDrawerNavigate={afterMobileDrawerNav}
+        inertDesktop={desktopSidebarHidden}
       />
       <main className="main-panel">
         <header className="main-mobile-header">
           <button
             type="button"
             className="main-menu-btn"
-            aria-label="Open menu"
-            aria-expanded={mobileNavOpen}
+            aria-label={
+              isMobileNav
+                ? t.openMenu
+                : desktopSidebarCollapsed
+                  ? t.expandSidebar
+                  : t.collapseSidebar
+            }
+            aria-expanded={
+              isMobileNav ? mobileNavOpen : !desktopSidebarCollapsed
+            }
             aria-controls="relay-sidebar"
-            onClick={() => setMobileNavOpen(true)}
+            onClick={onMainMenuClick}
           >
             <svg
               className="main-menu-icon"
@@ -500,16 +539,14 @@ export default function App({ boot }: Props) {
               ●
             </span>
             <p className="main-local-notice-text">
-              <strong>Local only.</strong> Conversation history stays in this
-              browser (Chrome local storage / Local Storage). This relay server
-              does not persist your chats.
+              <strong>{t.localNoticeStrong}</strong> {t.localNoticeBody}
             </p>
             <button
               type="button"
               className="main-local-notice-dismiss"
-              aria-label="Close notice"
+              aria-label={t.closeNotice}
               onClick={() => {
-                setCookie(COOKIE_LOCAL_NOTICE_DISMISSED, "1", 31536000 * 10);
+                setCookie(COOKIE_LOCAL_NOTICE_DISMISSED, "1", COOKIE_TEN_YEARS);
                 setShowLocalNotice(false);
               }}
             >
@@ -530,9 +567,7 @@ export default function App({ boot }: Props) {
           disabled={!hasApiKey}
           busy={busy}
           placeholder={
-            hasApiKey
-              ? "Message…"
-              : "Open from BridgeGPT extension Settings…"
+            hasApiKey ? t.placeholderHasKey : t.placeholderNoKey
           }
         />
       </main>

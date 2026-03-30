@@ -1,5 +1,7 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
 
+import { useI18n } from "../i18n/I18nProvider.js";
+
 type Props = {
   value: string;
   onChange: (v: string) => void;
@@ -28,6 +30,7 @@ export function Composer({
   placeholder,
   busy,
 }: Props) {
+  const { t } = useI18n();
   const taRef = useRef<HTMLTextAreaElement>(null);
 
   const resize = useCallback(() => {
@@ -73,7 +76,7 @@ export function Composer({
           disabled={disabled || busy || !value.trim()}
           onClick={onSend}
         >
-          {busy ? "…" : "Send"}
+          {busy ? "…" : t.composerSend}
         </button>
       </div>
     </div>

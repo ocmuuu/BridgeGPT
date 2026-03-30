@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import App from "./App";
+import { I18nProvider } from "./i18n/I18nProvider.js";
 import type { RelayChatBoot } from "./types/boot";
 import "./styles/index.css";
 
@@ -18,6 +19,8 @@ if (!rootEl) throw new Error("Missing #root");
 
 createRoot(rootEl).render(
   <StrictMode>
-    <App boot={readBoot()} />
+    <I18nProvider>
+      <App boot={readBoot()} />
+    </I18nProvider>
   </StrictMode>
 );
