@@ -444,7 +444,7 @@ export default function App({ boot }: Props) {
             does not persist your chats.
           </p>
         </div>
-        <MessageList messages={messages} />
+        <MessageList messages={messages} logoUrl={boot.logoUrl} />
         {error ? (
           <div className="main-error" role="alert">
             {error}

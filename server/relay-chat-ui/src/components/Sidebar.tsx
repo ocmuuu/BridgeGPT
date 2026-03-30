@@ -66,8 +66,20 @@ export function Sidebar({
       </button>
 
       <div className="sidebar-brand">
-        <div className="sidebar-logo">BridgeGPT</div>
-        <div className="sidebar-tag">Web relay</div>
+        <div className="sidebar-brand-row">
+          <img
+            className="sidebar-logo-img"
+            src={boot.logoUrl}
+            alt=""
+            width={36}
+            height={36}
+            decoding="async"
+          />
+          <div className="sidebar-brand-text">
+            <div className="sidebar-logo">BridgeGPT</div>
+            <div className="sidebar-tag">Web relay</div>
+          </div>
+        </div>
       </div>
 
       {hasApiKey && (

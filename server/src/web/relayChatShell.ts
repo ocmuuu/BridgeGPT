@@ -10,6 +10,7 @@ export const RELAY_API_KEY_COOKIE = "bridgegpt_api_key";
 export const RELAY_PUBLIC_URL_PREFIX = "/public";
 
 const RELAY_CHAT_STATIC_BASE = `${RELAY_PUBLIC_URL_PREFIX}/relay-chat`;
+const RELAY_LOGO_URL = `${RELAY_PUBLIC_URL_PREFIX}/images/logo.png`;
 
 function relayChatBootScriptJson(payload: object): string {
   return JSON.stringify(payload).replace(/</g, "\\u003c");
@@ -37,6 +38,7 @@ export function relayChatShellHtml(boot: RelayChatBoot): string {
       "gemini-3.1",
     ],
     ...boot,
+    logoUrl: RELAY_LOGO_URL,
   };
   const bootJson = relayChatBootScriptJson(bootFull);
 
@@ -46,6 +48,8 @@ export function relayChatShellHtml(boot: RelayChatBoot): string {
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>BridgeGPT</title>
+  <link rel="icon" href="${RELAY_LOGO_URL}" type="image/png" sizes="any"/>
+  <link rel="apple-touch-icon" href="${RELAY_LOGO_URL}"/>
   <link rel="stylesheet" href="${RELAY_CHAT_STATIC_BASE}/relay-app.css"/>
 </head>
 <body>

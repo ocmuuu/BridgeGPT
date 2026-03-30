@@ -8,4 +8,6 @@ export type RelayChatBoot = {
   model: string;
   backend: "openai" | "gemini";
   geminiModel: string;
+  /** Same-origin URL for `server/public/images/logo.png` (favicon + UI). */
+  logoUrl: string;
 };

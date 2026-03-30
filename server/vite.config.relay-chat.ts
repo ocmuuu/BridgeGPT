@@ -10,6 +10,14 @@ export default defineConfig({
   plugins: [react()],
   root: path.join(serverRoot, "relay-chat-ui"),
   base: "/public/relay-chat/",
+  server: {
+    proxy: {
+      "/public/images": {
+        target: "http://127.0.0.1:3456",
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     outDir: path.join(serverRoot, "public", "relay-chat"),
     emptyOutDir: true,

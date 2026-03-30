@@ -23,9 +23,9 @@ function assistantSourceLabel(
   return m ? `${platform} · ${m}` : platform;
 }
 
-type Props = { messages: ChatMessage[] };
+type Props = { messages: ChatMessage[]; logoUrl: string };
 
-export function MessageList({ messages }: Props) {
+export function MessageList({ messages, logoUrl }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +37,14 @@ export function MessageList({ messages }: Props) {
       <div className="message-inner">
         {messages.length === 0 && (
           <div className="empty-thread">
+            <img
+              className="empty-logo"
+              src={logoUrl}
+              alt=""
+              width={72}
+              height={72}
+              decoding="async"
+            />
             <h1 className="empty-title">BridgeGPT</h1>
             <p className="empty-sub">
               Messages relay to your signed-in ChatGPT or Gemini tab.

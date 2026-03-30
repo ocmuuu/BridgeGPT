@@ -192,6 +192,25 @@ body {
   border-bottom: 1px solid var(--sidebar-border);
 }
 
+.sidebar-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.sidebar-logo-img {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-brand-text {
+  min-width: 0;
+}
+
 .sidebar-logo {
   font-size: 1rem;
   font-weight: 600;
@@ -350,6 +369,15 @@ body {
   min-height: min(50vh, 320px);
   text-align: center;
   padding: 2rem 1rem;
+}
+
+.empty-logo {
+  width: 4.5rem;
+  height: 4.5rem;
+  margin-bottom: 1rem;
+  border-radius: 0.85rem;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .empty-title {
