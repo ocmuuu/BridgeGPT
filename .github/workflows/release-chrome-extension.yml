@@ -1,0 +1,40 @@
+# Build the Chrome MV3 extension and attach a .zip to the GitHub Release for the pushed tag.
+# Usage: git tag v1.4.0 && git push origin v1.4.0
+name: Release Chrome extension
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  chrome-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Chrome extension
+        run: npm run build:chrome
+
+      - name: Create zip (manifest at zip root)
+        run: cd extension/dist_chrome && zip -r "$GITHUB_WORKSPACE/bridgegpt-chrome-${{ github.ref_name }}.zip" .
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bridgegpt-chrome-${{ github.ref_name }}.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
