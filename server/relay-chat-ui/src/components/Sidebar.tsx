@@ -22,8 +22,6 @@ type Props = {
   fromUrlKey: boolean;
   backend: "openai" | "gemini";
   onBackendChange: (b: "openai" | "gemini") => void;
-  model: string;
-  onModelChange: (m: string) => void;
   onNewChat: () => void | Promise<void>;
   busy: boolean;
   sessions: StoredConversation[];
@@ -43,8 +41,6 @@ export function Sidebar({
   fromUrlKey,
   backend,
   onBackendChange,
-  model,
-  onModelChange,
   onNewChat,
   busy,
   sessions,
@@ -55,41 +51,38 @@ export function Sidebar({
   onCloseDrawer,
   onAfterDrawerNavigate,
 }: Props) {
-  const models =
-    backend === "openai" ? boot.openaiModels : boot.geminiModels;
-
   const orderedSessions = [...sessions].sort(
     (a, b) => b.updatedAt - a.updatedAt
   );
 
   return (
     <aside className="sidebar" id="relay-sidebar">
-      {isMobileDrawer ? (
-        <div className="sidebar-mobile-toolbar">
-          <button
-            type="button"
-            className="sidebar-mobile-close"
-            aria-label="Close menu"
-            onClick={onCloseDrawer}
-          >
-            ×
-          </button>
-        </div>
-      ) : null}
       <div className="sidebar-brand">
-        <div className="sidebar-brand-row">
-          <img
-            className="sidebar-logo-img"
-            src={boot.logoUrl}
-            alt=""
-            width={36}
-            height={36}
-            decoding="async"
-          />
-          <div className="sidebar-brand-text">
-            <div className="sidebar-tag">Web relay</div>
-            <div className="sidebar-logo">BridgeGPT</div>
+        <div className="sidebar-brand-head">
+          <div className="sidebar-brand-row">
+            <img
+              className="sidebar-logo-img"
+              src={boot.logoUrl}
+              alt=""
+              width={36}
+              height={36}
+              decoding="async"
+            />
+            <div className="sidebar-brand-text">
+              <div className="sidebar-tag">Web relay</div>
+              <div className="sidebar-logo">BridgeGPT</div>
+            </div>
           </div>
+          {isMobileDrawer ? (
+            <button
+              type="button"
+              className="sidebar-mobile-close"
+              aria-label="Close menu"
+              onClick={onCloseDrawer}
+            >
+              ×
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -131,25 +124,6 @@ export function Sidebar({
         >
           <option value="openai">ChatGPT · OpenAI API</option>
           <option value="gemini">Gemini · Google API</option>
-        </select>
-      </div>
-
-      <div className="sidebar-section">
-        <label className="sidebar-label" htmlFor="sidebar-model">
-          Model
-        </label>
-        <select
-          id="sidebar-model"
-          className="sidebar-select"
-          value={model}
-          disabled={!hasApiKey || busy}
-          onChange={(e) => onModelChange(e.target.value)}
-        >
-          {models.map((id) => (
-            <option key={id} value={id}>
-              {id}
-            </option>
-          ))}
         </select>
       </div>
 

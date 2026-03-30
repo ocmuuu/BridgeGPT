@@ -4,6 +4,7 @@ import { Composer } from "./components/Composer";
 import { MessageList, type ChatMessage } from "./components/MessageList";
 import { Sidebar } from "./components/Sidebar";
 import { getCookie, setCookie } from "./lib/cookies";
+import { formatRelayChatHttpError } from "./lib/relayHttpError";
 import { readSseStream } from "./lib/sse";
 import {
   buildOrUpdateSession,
@@ -16,8 +17,6 @@ import {
 import type { RelayChatBoot } from "./types/boot";
 
 const SS_BACKEND = "bridgegpt_relay_chat_backend";
-const SS_MODEL_OPENAI = "bridgegpt_relay_chat_model_openai";
-const SS_MODEL_GEMINI = "bridgegpt_relay_chat_model_gemini";
 /** Cookie: user dismissed the “local only” banner; ~10y Max-Age set on dismiss. */
 const COOKIE_LOCAL_NOTICE_DISMISSED = "bridgegpt_relay_chat_local_notice_dismissed";
 
@@ -43,26 +42,14 @@ function pickInitialBackend(boot: RelayChatBoot): "openai" | "gemini" {
   return boot.backend === "gemini" ? "gemini" : "openai";
 }
 
-function pickModelForBackend(
+/** Default model from boot config for the active backend (no UI picker). */
+function defaultModelForBackend(
   backend: "openai" | "gemini",
   boot: RelayChatBoot
 ): string {
   const list = backend === "openai" ? boot.openaiModels : boot.geminiModels;
-  const saved =
-    backend === "openai" ? ssGet(SS_MODEL_OPENAI) : ssGet(SS_MODEL_GEMINI);
   const def = backend === "openai" ? boot.model : boot.geminiModel;
-  let pick = saved || def;
-  if (!list.includes(pick)) pick = list[0]!;
-  return pick;
-}
-
-function coerceModelForBackend(
-  backend: "openai" | "gemini",
-  saved: string,
-  boot: RelayChatBoot
-): string {
-  const list = backend === "openai" ? boot.openaiModels : boot.geminiModels;
-  if (saved && list.includes(saved)) return saved;
+  if (def && list.includes(def)) return def;
   return list[0]!;
 }
 
@@ -132,7 +119,7 @@ export default function App({ boot }: Props) {
   const [fromUrlKey, setFromUrlKey] = useState(false);
   const [backend, setBackend] = useState(() => pickInitialBackend(boot));
   const [model, setModel] = useState(() =>
-    pickModelForBackend(pickInitialBackend(boot), boot)
+    defaultModelForBackend(pickInitialBackend(boot), boot)
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessions, setSessions] = useState<StoredConversation[]>([]);
@@ -200,7 +187,7 @@ export default function App({ boot }: Props) {
         : undefined;
       if (cur) {
         setBackend(cur.backend);
-        setModel(coerceModelForBackend(cur.backend, cur.model, boot));
+        setModel(defaultModelForBackend(cur.backend, boot));
         if (cur.turns.length) {
           setMessages(
             turnsToChatMessages(cur.turns, {
@@ -247,13 +234,7 @@ export default function App({ boot }: Props) {
   const onBackendChange = (b: "openai" | "gemini") => {
     setBackend(b);
     ssSet(SS_BACKEND, b);
-    setModel(pickModelForBackend(b, boot));
-  };
-
-  const onModelChange = (m: string) => {
-    setModel(m);
-    if (backend === "openai") ssSet(SS_MODEL_OPENAI, m);
-    else ssSet(SS_MODEL_GEMINI, m);
+    setModel(defaultModelForBackend(b, boot));
   };
 
   const onNewChat = async () => {
@@ -273,7 +254,7 @@ export default function App({ boot }: Props) {
     if (!s) return;
     setActiveConversationId(id);
     setBackend(s.backend);
-    setModel(coerceModelForBackend(s.backend, s.model, boot));
+    setModel(defaultModelForBackend(s.backend, boot));
     setMessages(
       turnsToChatMessages(s.turns, { backend: s.backend, model: s.model })
     );
@@ -315,7 +296,7 @@ export default function App({ boot }: Props) {
     const cur = next.sessions.find((s) => s.id === aid);
     if (cur) {
       setBackend(cur.backend);
-      setModel(coerceModelForBackend(cur.backend, cur.model, boot));
+      setModel(defaultModelForBackend(cur.backend, boot));
       setMessages(
         turnsToChatMessages(cur.turns, {
           backend: cur.backend,
@@ -376,19 +357,8 @@ export default function App({ boot }: Props) {
       }
 
       if (!res.ok) {
-        let errText = await res.text();
-        try {
-          const j = JSON.parse(errText) as {
-            error?: { message?: string; status?: string; code?: string };
-          };
-          errText =
-            j.error?.message ||
-            (j.error?.code != null ? String(j.error.code) : "") ||
-            errText;
-        } catch {
-          /* keep text */
-        }
-        setError(`Request failed (${res.status}): ${errText}`);
+        const errBody = await res.text();
+        setError(formatRelayChatHttpError(res.status, errBody));
         setMessages((prev) => prev.filter((m) => m.id !== asstId));
         return;
       }
@@ -489,8 +459,6 @@ export default function App({ boot }: Props) {
         fromUrlKey={fromUrlKey}
         backend={backend}
         onBackendChange={onBackendChange}
-        model={model}
-        onModelChange={onModelChange}
         onNewChat={onNewChat}
         busy={busy}
         sessions={sessions}
@@ -551,7 +519,7 @@ export default function App({ boot }: Props) {
         ) : null}
         <MessageList messages={messages} logoUrl={boot.logoUrl} />
         {error ? (
-          <div className="main-error" role="alert">
+          <div className="main-error" role="alert" aria-live="polite">
             {error}
           </div>
         ) : null}

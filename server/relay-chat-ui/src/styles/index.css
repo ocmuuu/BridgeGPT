@@ -60,17 +60,14 @@ body {
   overflow-y: auto;
 }
 
-.sidebar-mobile-toolbar {
-  display: none;
-}
-
 .sidebar-mobile-close {
-  display: flex;
+  display: none;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 2.25rem;
   height: 2.25rem;
-  margin: -0.15rem 0 0.35rem -0.25rem;
+  margin: 0;
   padding: 0;
   border: none;
   border-radius: 0.5rem;
@@ -221,10 +218,19 @@ body {
   border-bottom: 1px solid var(--sidebar-border);
 }
 
+.sidebar-brand-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
 .sidebar-brand-row {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .sidebar-logo-img {
@@ -659,7 +665,11 @@ body {
   margin: 0 auto;
   padding: 0 1rem 0.5rem;
   font-size: 0.875rem;
+  line-height: 1.5;
   color: var(--error);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* —— Composer —— */
@@ -787,9 +797,8 @@ body {
     box-shadow: 8px 0 32px rgba(0, 0, 0, 0.45);
   }
 
-  .sidebar-mobile-toolbar {
-    display: block;
-    flex-shrink: 0;
+  .sidebar-mobile-close {
+    display: flex;
   }
 
   .main-panel {

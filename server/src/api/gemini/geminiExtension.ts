@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import type { Server } from "socket.io";
 
+import { EXTENSION_OFFLINE_MESSAGE } from "../shared/extensionOfflineBody.js";
 import { relayLogApiKeyHint } from "../shared/roomAuth.js";
 
 export async function assertExtensionOnlineGemini(
@@ -16,8 +17,7 @@ export async function assertExtensionOnlineGemini(
     res.status(503).json({
       error: {
         code: 503,
-        message:
-          "BridgeGPT extension is not connected for this API key. Connect in the extension and keep https://gemini.google.com signed in.",
+        message: EXTENSION_OFFLINE_MESSAGE,
         status: "UNAVAILABLE",
       },
     });
