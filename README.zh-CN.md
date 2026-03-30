@@ -40,7 +40,7 @@
 
 ## 能做什么
 
-BridgeGPT 让你在自己运行的**中继（relay）**上调用 **`/v1/chat/completions`**（OpenAI 风格）以及 **`/v1beta/models/...:generateContent`**（Gemini 风格）等路由。中继把请求转给 **Chrome（或 Firefox）扩展**，扩展在已登录的 **https://chatgpt.com** 和/或 **https://gemini.google.com** 标签页中操作页面；返回内容再包装成 JSON 或 SSE，便于沿用 **OpenAI** 或 **Gemini** 客户端的调用方式（通常只需改 **`base_url`** 与 **`api_key`**）。
+BridgeGPT 让你在自己运行的**中继（relay）**上调用 **`/v1/chat/completions`**（OpenAI 风格）以及 **`/v1beta/models/...:generateContent`**（Gemini 风格）等路由。中继把请求转给 **Chrome（或 Firefox）扩展**，扩展在已登录的 **https://chatgpt.com** / **https://chat.openai.com** 和/或 **https://gemini.google.com** 标签页中操作页面；返回内容再包装成 JSON 或 SSE，便于沿用 **OpenAI** 或 **Gemini** 客户端的调用方式（通常只需改 **`base_url`** 与 **`api_key`**）。
 
 **这不是**官方 OpenAI 或 Google Generative Language API，**不是** ChatGPT / Gemini 官方产品，**不能**用来规避服务条款。请仅在你有权使用的账号上、用于个人或已获许可的自动化场景。
 
@@ -53,7 +53,7 @@ sequenceDiagram
   participant App as Your app (OpenAI SDK)
   participant Relay as BridgeGPT relay (Node)
   participant Ext as Browser extension
-  participant Web as chatgpt.com 或 gemini.google.com
+  participant Web as chatgpt.com / chat.openai.com 或 gemini.google.com
 
   App->>Relay: POST /v1/chat/completions 或 /v1beta/...:generateContent
   Relay->>Ext: Socket.IO serverMessage
@@ -64,7 +64,7 @@ sequenceDiagram
 ```
 
 1. 中继通过 **`api_key`** 校验 HTTP 请求：该值与扩展「设置」里显示的密钥相同（服务端内部会把它映射到你浏览器当前的 Socket.IO 会话）。
-2. 扩展按路由与请求头打开或复用 **chatgpt.com** 和/或 **gemini.google.com** 标签页，填入用户消息并从页面读取助手回复。
+2. 扩展按路由与请求头打开或复用 **chatgpt.com** / **chat.openai.com** 和/或 **gemini.google.com** 标签页，填入用户消息并从页面读取助手回复。
 3. 中继把该文本包装为 **`chat.completion`** / **`chat.completion.chunk`**，或 **Gemini `generateContent` 风格** 的 JSON。
 
 ---
@@ -87,7 +87,7 @@ sequenceDiagram
 | Node.js | **≥ 18** |
 | npm | 在仓库根目录使用支持 workspaces 的安装方式 |
 | 浏览器 | **Chrome** 或 **Firefox**（Manifest V3） |
-| ChatGPT | 使用 ChatGPT 相关接口时：在 **https://chatgpt.com** 保持网页版已登录（若常用 **www** 子域，请确认扩展 `content_scripts` 是否匹配该 URL） |
+| ChatGPT | 使用 ChatGPT 相关接口时：在 **https://chatgpt.com** 或 **https://chat.openai.com** 保持网页版已登录（扩展已匹配二者；其它域名如 **www** 需在 `extension/manifest.json` 中自行添加匹配规则） |
 | Gemini | 使用 Gemini 相关接口或 `X-Bridge-Provider: gemini` 时：在 **https://gemini.google.com** 保持已登录 |
 
 ---
@@ -137,7 +137,7 @@ npm run build:chrome
 
 1. 打开扩展的 **Settings**（或首次安装时打开的页面）。
 2. 点击 **Connect**，让扩展通过 WebSocket 接入中继。
-3. 按你使用的后端保持 **chatgpt.com** 和/或 **gemini.google.com** 已登录；扩展会尽量复用已有匹配标签页。
+3. 按你使用的后端保持 **chatgpt.com** / **chat.openai.com** 和/或 **gemini.google.com** 已登录；扩展会尽量复用已有匹配标签页。
 4. 在设置页复制 **`base_url`**（`…/v1`）和 **`api_key`**（形如 `sk-bridgegpt-…`）。
 
 ### 5. 调用 API（Python 示例）
@@ -210,7 +210,7 @@ curl -sS "http://127.0.0.1:3456/v1beta/models/gemini-3.1-flash:generateContent" 
 2. **构建** — `npm run build:server` 生成 `server/dist/`。
 3. **运行** — `npm run start -w @bridgegpt/server`（或用进程管理器跑 `node server/dist/index.js`）。可设置 **`PORT`**（默认 `3456`）以及可选的 **`RELAY_REQUEST_TIMEOUT_MS`**。
 4. **HTTPS** — 若客户端不在本机，请在前面加 **Caddy**、**nginx** 等反向代理并启用 TLS；须为 Socket.IO **放行 WebSocket** 升级。
-5. **扩展** — 使用 **`VITE_API_BASE_URL`** 指向公网中继地址（带尾部 `/`）重新构建扩展，并把该构建安装到**长期登录 ChatGPT / Gemini（网页）的那台浏览器**里。
+5. **扩展** — 使用 **`VITE_API_BASE_URL`** 指向公网中继地址（带尾部 `/`）重新构建扩展，并把该构建安装到**长期登录 ChatGPT（chatgpt.com 或 chat.openai.com）/ Gemini（网页）的那台浏览器**里。
 
 加固与运维细节见 [生产环境建议](#生产环境建议) 与 [安全](#安全)。更完整的生产部署清单见 **[docs/SERVER_DEPLOY.zh-CN.md](docs/SERVER_DEPLOY.zh-CN.md)**。
 
@@ -328,7 +328,7 @@ npm run start -w @bridgegpt/server
 |------|----------|
 | 扩展显示 **Disconnected** | 中继是否在跑？`VITE_API_BASE_URL` 是否正确？防火墙 / HTTPS 是否一致？再点 **Connect**；需要可开启设置里的 **Keep alive**。 |
 | HTTP **503**「No extension connected」 | 扩展未连接或 **api_key** 不一致。打开设置确认已 **Connect**，且客户端使用的 **api_key** 与扩展一致。 |
-| HTTP **504** / 超时 | 目标标签页关闭、过慢或未渲染完；可调大 `RELAY_REQUEST_TIMEOUT_MS`；保持 **chatgpt.com** 或 **gemini.google.com** 可正常完成回复。 |
+| HTTP **504** / 超时 | 目标标签页关闭、过慢或未渲染完；可调大 `RELAY_REQUEST_TIMEOUT_MS`；保持 **chatgpt.com** / **chat.openai.com** 或 **gemini.google.com** 可正常完成回复。 |
 | **扩展 reload** 后每次请求都新开标签 | Service Worker 重启后内存中的 tab 映射会丢失；若首次 `sendMessage` 因内容脚本未就绪失败，扩展会按逻辑**新建标签**。可刷新已有页面或重试第二次请求。 |
 | 回复为空或异常（ChatGPT） | 站点改版后选择器可能需更新；查看对应标签页控制台。 |
 | 回复为空、重复上一轮或异常（Gemini） | 确认 **gemini.google.com** 已登录；多轮场景下扩展会按**本次 prompt** 对齐会话块，若 UI 大改需同步更新 `gemini-page` 等逻辑。 |
@@ -343,16 +343,20 @@ bridgegpt/
 ├── docs/                      # 如 [SERVER_DEPLOY.zh-CN.md](docs/SERVER_DEPLOY.zh-CN.md)
 ├── extension/                 # Vite + CRXJS（Chrome / Firefox）
 │   ├── src/pages/background/  # Service Worker、Socket.IO 客户端
-│   ├── src/pages/content/     # chatgpt.com / gemini.google.com 脚本与 gemini-page（页面世界）
+│   ├── src/pages/content/     # index.tsx（内容脚本）；chatgpt-page / gemini-page（页面世界）与 webProviders/chatgptWeb、geminiWeb
 │   ├── src/pages/settings/    # 设置页（连接、API 地址、保活）
 │   ├── manifest.json
 │   └── package.json           # workspace: bridgegpt-extension
 ├── server/                    # 中继
 │   ├── src/
 │   │   ├── index.ts           # HTTP + Socket.IO 启动
-│   │   ├── extensionRelay.ts  # 待处理队列、/connect 路由
-│   │   ├── openaiApi.ts       # OpenAI 形态路由与 SSE
-│   │   └── geminiApi.ts       # /v1beta Gemini 形态路由
+│   │   ├── socket/
+│   │   │   └── extensionRelay.ts  # 待处理队列、/connect、Socket.IO
+│   │   ├── api/
+│   │   │   ├── openai/        # /v1/*（对话、模型、SSE 等）
+│   │   │   ├── gemini/        # /v1beta/* Gemini 形态路由
+│   │   │   └── web/           # 各提供商网页 UI 的提示词 / 标记辅助
+│   │   └── web/               # 中继首页（`GET /`）与内置对话壳
 │   └── package.json           # workspace: @bridgegpt/server
 ├── package.json               # 工作区根
 └── README.md

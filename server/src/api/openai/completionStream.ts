@@ -7,7 +7,7 @@ import {
   writeSseDone,
 } from "../shared/sse.js";
 import { extractAssistantContent } from "./assistantContent.js";
-import { buildUsage } from "./messagePrompt.js";
+import { buildUsage } from "../web/chatgptWebPrompt.js";
 
 type CompletionStreamBase = {
   id: string;

@@ -12,7 +12,7 @@ import { roughTokenCount } from "../shared/tokens.js";
 import {
   buildPromptForGeminiWeb,
   estimateGeminiPromptTokens,
-} from "./geminiBodyText.js";
+} from "../web/geminiWebPrompt.js";
 import { assertExtensionOnlineGemini } from "./geminiExtension.js";
 import {
   modelsPath,

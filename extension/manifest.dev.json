@@ -17,8 +17,12 @@
       "matches": []
     },
             {
-      "resources": ["loader.js"],
-      "matches": ["https://*.chatgpt.com/*", "https://chat.openai.com/*"]
+      "resources": ["chatgpt-page.js"],
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://*.chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ]
     },
     {
       "resources": ["gemini-page.js"],

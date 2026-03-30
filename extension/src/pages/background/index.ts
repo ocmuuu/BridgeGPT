@@ -475,7 +475,7 @@ const handleErrorOnConnect = (err: any) => {
   });
 };
 
-/** Payload sent to relay over Socket.IO; includes loader capture, relayRequest, extensionMeta. */
+/** Payload sent to relay over Socket.IO; includes page-script capture, relayRequest, extensionMeta. */
 export type ClientRelayPayload = Record<string, unknown>;
 
 type AgentMessage =

@@ -4,7 +4,7 @@ import type { Server } from "socket.io";
 import { pushPending } from "../../socket/extensionRelay.js";
 import { writeSseData } from "../shared/sse.js";
 import { assertExtensionOnline } from "./extensionOnline.js";
-import { buildPromptForChatgptWeb } from "./messagePrompt.js";
+import { buildPromptForChatgptWeb } from "../web/chatgptWebPrompt.js";
 import { bridgeWebProviderFromRequest } from "./providerHeader.js";
 import { sendOpenAIChatCompletionStream } from "./completionStream.js";
 import { toOpenAICompletion } from "./completionResponse.js";

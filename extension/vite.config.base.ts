@@ -42,7 +42,7 @@ export default defineConfig({
     build: {
     rollupOptions: {
       input: {
-        loader: resolve(__dirname, "src/pages/content/chatgpt-loader.ts"),
+        "chatgpt-page": resolve(__dirname, "src/pages/content/chatgpt-page.ts"),
         "gemini-page": resolve(__dirname, "src/pages/content/gemini-page.ts"),
         settingsHtml: resolve(__dirname, "src/pages/settings/index.html"),
       },

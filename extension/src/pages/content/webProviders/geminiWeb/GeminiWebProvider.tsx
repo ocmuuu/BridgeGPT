@@ -1,16 +1,21 @@
 import { useEffect, useRef } from "react";
-import { buildWebPromptFromApiBody } from "../../shared/promptFromBody";
 import type {
   AskQuestionPayload,
   QuestionAnswerPayload,
 } from "../../shared/relayTypes";
 
-export type { QuestionAnswerPayload };
+/**
+ * Must match `gemini-page.ts` (page world). HTML→Markdown runs on the relay
+ * (`server/src/api/web/geminiWebHtmlToMarkdown.ts`).
+ */
+const CONTENT_SOURCE = "bridgegpt-content-script";
+const RUN_TYPE = "bridgegpt_gemini_run";
 
-export const ChatgptPage = () => {
-  console.log("[BridgeGPT] ChatGPT provider loaded");
+export const GeminiWebProvider = () => {
+  console.log("[BridgeGPT] Gemini provider loaded");
 
   const lastRelayRef = useRef<{ route: string; body: unknown } | null>(null);
+  const pageScriptReadyRef = useRef(false);
 
   const runLastScript = (payload: unknown) => {
     if (payload === null || payload === undefined) return;
@@ -22,11 +27,12 @@ export const ChatgptPage = () => {
         ? { ...(payload as QuestionAnswerPayload) }
         : { assistantText: String(payload), version: 1 };
 
-    if (
-      typeof base.assistantText === "string" &&
-      base.assistantText.trim() === "" &&
-      typeof base.capture !== "object"
-    ) {
+    const hasAssistant =
+      (typeof base.assistantHtml === "string" &&
+        base.assistantHtml.trim() !== "") ||
+      (typeof base.assistantText === "string" &&
+        base.assistantText.trim() !== "");
+    if (!hasAssistant && typeof base.capture !== "object") {
       return;
     }
 
@@ -49,6 +55,10 @@ export const ChatgptPage = () => {
     const onWindowMessage = (event: MessageEvent) => {
       if (event.source !== window) return;
       const { data } = (event.data || {}) as { data?: unknown };
+      if (data && typeof data === "object" && data !== null) {
+        const src = (data as { source?: unknown }).source;
+        if (src !== "bridgegpt-gemini-page") return;
+      }
       runLastScript(data);
     };
 
@@ -60,30 +70,23 @@ export const ChatgptPage = () => {
       if (msg.type !== "ask_question" || !msg.content) {
         return false;
       }
-      const c = msg.content;
-      lastRelayRef.current = { route: c.route, body: c.body };
-      const inputElement = document.querySelector(
-        '[name="prompt-textarea"]'
-      ) as HTMLInputElement;
-      const contentArea = document.querySelector(
-        "#prompt-textarea"
-      ) as HTMLDivElement;
-      if (!inputElement || !contentArea) {
-        sendResponse({ ok: false, reason: "dom_not_ready" });
+      if (!pageScriptReadyRef.current) {
+        sendResponse({ ok: false, reason: "gemini_page_script_not_ready" });
         return false;
       }
+      const c = msg.content;
+      lastRelayRef.current = { route: c.route, body: c.body };
       const text =
-        typeof c.promptForChatgpt === "string" && c.promptForChatgpt.length > 0
-          ? c.promptForChatgpt
-          : buildWebPromptFromApiBody(c.route, c.body);
-      contentArea.innerHTML = text;
-      inputElement.value = text;
-      window.setTimeout(() => {
-        const submitButton = document.querySelector(
-          "#composer-submit-button"
-        ) as HTMLButtonElement;
-        submitButton?.click();
-      }, 100);
+        typeof c.promptForChatgpt === "string" ? c.promptForChatgpt.trim() : "";
+      if (!text) {
+        sendResponse({ ok: false, reason: "missing_prompt_from_relay" });
+        return false;
+      }
+
+      window.postMessage(
+        { source: CONTENT_SOURCE, type: RUN_TYPE, text },
+        "*"
+      );
       sendResponse({ ok: true });
       return false;
     };
@@ -91,9 +94,10 @@ export const ChatgptPage = () => {
     chrome.runtime.onMessage.addListener(onRuntimeMessage);
 
     const script = document.createElement("script");
-    script.src = chrome.runtime.getURL("loader.js");
+    script.src = chrome.runtime.getURL("gemini-page.js");
     document.body.appendChild(script);
     script.onload = () => {
+      pageScriptReadyRef.current = true;
       window.addEventListener("message", onWindowMessage);
     };
 

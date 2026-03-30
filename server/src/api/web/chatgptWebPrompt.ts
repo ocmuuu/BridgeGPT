@@ -21,6 +21,9 @@ export function normalizeMessageContentToString(content: unknown): string {
  * Plain text for the ChatGPT composer: message bodies only (no "user:" / role prefixes).
  * ChatGPT.com already keeps thread context, so only the latest user turn is injected —
  * sending the full messages[] would duplicate the entire history in the input box.
+ *
+ * Emitted as `promptForChatgpt` on every relay → extension request; the extension does not
+ * rebuild this string locally.
  */
 export function buildPromptForChatgptWeb(route: string, body: unknown): string {
   if (

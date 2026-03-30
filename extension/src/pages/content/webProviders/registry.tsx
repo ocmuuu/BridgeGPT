@@ -1,7 +1,7 @@
 import type { WebProviderId } from "@src/webProviders/config";
 import type { ComponentType } from "react";
-import { ChatgptPage } from "./chatgpt/ChatgptPage";
-import { GeminiPage } from "./gemini/GeminiPage";
+import { ChatgptWebProvider } from "./chatgptWeb/ChatgptWebProvider";
+import { GeminiWebProvider } from "./geminiWeb/GeminiWebProvider";
 
 export type ContentProviderSpec = {
   id: WebProviderId;
@@ -26,10 +26,10 @@ export function resolveContentProvider(href: string): ContentProviderSpec | null
     h.endsWith(".chatgpt.com") ||
     h === "chat.openai.com"
   ) {
-    return { id: "chatgpt", Component: ChatgptPage };
+    return { id: "chatgpt", Component: ChatgptWebProvider };
   }
   if (h === "gemini.google.com") {
-    return { id: "gemini", Component: GeminiPage };
+    return { id: "gemini", Component: GeminiWebProvider };
   }
   return null;
 }

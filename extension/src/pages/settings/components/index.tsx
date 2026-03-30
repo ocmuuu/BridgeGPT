@@ -97,8 +97,6 @@ export const SettingPage = () => {
 
         <RelayServerSection />
 
-        <ApiKeySection />
-
         <div className="bg-white border border-slate-200/90 rounded-xl p-6 mb-6 shadow-sm shadow-slate-900/5 dark:bg-slate-900/90 dark:border-slate-700 dark:shadow-black/20">
           <div className="flex items-center gap-3 mb-4">
             <Link2 className="text-slate-700 dark:text-slate-300" size={24} />
@@ -124,6 +122,8 @@ export const SettingPage = () => {
             </div>
           </label>
         </div>
+
+        <ApiKeySection />
 
         {/* How It Works Section */}
         <div className="bg-white border border-slate-200/90 rounded-xl p-6 mb-6 shadow-sm shadow-slate-900/5 dark:bg-slate-900/90 dark:border-slate-700 dark:shadow-black/20">

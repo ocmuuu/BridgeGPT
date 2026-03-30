@@ -1,3 +1,8 @@
+/**
+ * Page-world script for chatgpt.com: intercepts fetch/SSE and forwards assistant text.
+ * Paired with `gemini-page.ts` on gemini.google.com. Injected as `chatgpt-page.js`.
+ * Content script: `webProviders/chatgptWeb/ChatgptWebProvider.tsx`.
+ */
 (function () {
   const originalFetch = window.fetch;
 
@@ -104,11 +109,12 @@
         }
       }
 
+      /** Entity markers etc. are stripped on the relay in extractAssistantContent. */
       const assistantText = fullAssistantMessage.trim();
 
       const payload = {
         version: 1 as const,
-        source: "bridgegpt-extension-loader",
+        source: "bridgegpt-chatgpt-page",
         assistantText,
         page: {
           href: typeof location !== "undefined" ? location.href : "",

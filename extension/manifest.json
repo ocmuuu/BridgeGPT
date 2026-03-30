@@ -38,7 +38,7 @@
       "matches": []
     },
     {
-      "resources": ["loader.js"],
+      "resources": ["chatgpt-page.js"],
       "matches": [
         "https://chatgpt.com/*",
         "https://chat.openai.com/*"

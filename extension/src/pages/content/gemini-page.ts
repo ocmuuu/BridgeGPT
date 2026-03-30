@@ -1,7 +1,10 @@
 /**
- * Runs in the page's main world (injected script) so it can reach shadow DOM
+ * Runs in the page's main world (injected as `gemini-page.js`) so it can reach shadow DOM
  * inside custom elements such as `rich-textarea`. Keep in sync with
- * `webProviders/gemini/GeminiPage.tsx` message constants.
+ * `webProviders/geminiWeb/GeminiWebProvider.tsx` message constants.
+ *
+ * Sends `assistantHtml` (Gemini `.markdown` innerHTML) to the relay; HTML→Markdown
+ * runs on the server (`server/src/api/web/geminiWebHtmlToMarkdown.ts`).
  */
 (function () {
   const SRC_PAGE = "bridgegpt-gemini-page";
@@ -320,14 +323,42 @@
     editable.dispatchEvent(new KeyboardEvent("keyup", { ...opts, key: "a" }));
   }
 
-  /** Prefer the last non-empty node (Gemini may append empty response placeholders). */
-  function lastNonEmptyText(nodes: Iterable<Element>): string {
+  type AssistantCapture = { assistantHtml: string; assistantText: string };
+
+  function assistantRootToCapture(root: HTMLElement): AssistantCapture {
+    return {
+      assistantHtml: root.innerHTML?.trim() ?? "",
+      assistantText: root.innerText?.trim() ?? "",
+    };
+  }
+
+  function captureKey(c: AssistantCapture): string {
+    return c.assistantHtml || c.assistantText;
+  }
+
+  function resolveAssistantMarkdownPanel(el: HTMLElement): HTMLElement | null {
+    if (el.classList.contains("markdown")) return el;
+    const inner = el.querySelector(
+      '.markdown[aria-live="polite"], .markdown.markdown-main-panel, message-content .markdown, .markdown'
+    );
+    return inner instanceof HTMLElement ? inner : null;
+  }
+
+  /** Prefer the last non-empty assistant panel (Gemini may append empty placeholders). */
+  function lastNonEmptyAssistantCapture(
+    nodes: Iterable<Element>
+  ): AssistantCapture {
+    const empty: AssistantCapture = { assistantHtml: "", assistantText: "" };
     const list = Array.from(nodes);
     for (let i = list.length - 1; i >= 0; i--) {
-      const t = list[i].textContent?.trim() ?? "";
-      if (t) return t;
+      const el = list[i];
+      if (!(el instanceof HTMLElement)) continue;
+      const panel = resolveAssistantMarkdownPanel(el);
+      if (!panel) continue;
+      const cap = assistantRootToCapture(panel);
+      if (captureKey(cap)) return cap;
     }
-    return "";
+    return empty;
   }
 
   function normalizeChatPrompt(s: string): string {
@@ -389,13 +420,14 @@
    * Read assistant text only for the turn we just sent. Prevents turn 2 from resolving
    * while the DOM still exposes turn 1's stable answer (global "last model-response" bug).
    */
-  function collectModelReplyTextForPrompt(prompt: string): string {
+  function collectModelReplyForPrompt(prompt: string): AssistantCapture {
+    const empty: AssistantCapture = { assistantHtml: "", assistantText: "" };
     const c = findConversationForPrompt(prompt);
-    if (!c) return "";
+    if (!c) return empty;
     const mr = c.querySelector("model-response");
-    if (!mr) return "";
+    if (!mr) return empty;
     const root = assistantMarkdownRoot(mr);
-    return root?.textContent?.trim() ?? "";
+    return root instanceof HTMLElement ? assistantRootToCapture(root) : empty;
   }
 
   function isMarkdownIdleForPrompt(prompt: string): boolean {
@@ -412,7 +444,7 @@
    * Fallback when prompt matching is unavailable (empty prompt).
    * Latest assistant body across the thread — do not use for multi-turn capture.
    */
-  function collectModelReplyTextGlobal(): string {
+  function collectModelReplyGlobal(): AssistantCapture {
     const chains: string[] = [
       'model-response .markdown[aria-live="polite"]',
       "model-response message-content",
@@ -421,13 +453,15 @@
       'message-content[class*="model-response"]',
     ];
     for (const sel of chains) {
-      const t = lastNonEmptyText(document.querySelectorAll(sel));
-      if (t) return t;
+      const cap = lastNonEmptyAssistantCapture(document.querySelectorAll(sel));
+      if (captureKey(cap)) return cap;
     }
     const shells = document.querySelectorAll('[class*="model-response-text"]');
-    const fromShell = lastNonEmptyText(shells);
-    if (fromShell) return fromShell;
-    return lastNonEmptyText(document.querySelectorAll("message-content"));
+    const fromShell = lastNonEmptyAssistantCapture(shells);
+    if (captureKey(fromShell)) return fromShell;
+    return lastNonEmptyAssistantCapture(
+      document.querySelectorAll("message-content")
+    );
   }
 
   async function runAsk(text: string): Promise<void> {
@@ -438,6 +472,7 @@
     const editable = await waitFor(findEditableRoot, 20000);
     if (!editable) {
       postToContent({
+        assistantHtml: "",
         assistantText: "",
         capture: { ...captureBase, ok: false, reason: "no_input" },
         page: { href: location.href, title: document.title },
@@ -455,6 +490,7 @@
       findSendButton();
     if (!btn) {
       postToContent({
+        assistantHtml: "",
         assistantText: "",
         capture: { ...captureBase, ok: false, reason: "no_send_button" },
         page: { href: location.href, title: document.title },
@@ -472,6 +508,7 @@
     }
     if (!btn || isSendButtonDisabled(btn)) {
       postToContent({
+        assistantHtml: "",
         assistantText: "",
         capture: {
           ...captureBase,
@@ -488,31 +525,38 @@
     }
     await submitComposer(editable, btn);
 
-    let lastText = "";
+    let lastKey = "";
+    let lastCapture: AssistantCapture = {
+      assistantHtml: "",
+      assistantText: "",
+    };
     let stableTicks = 0;
     const maxTicks = 600;
     const pollMs = 200;
     const promptNorm = normalizeChatPrompt(text);
-    const pickText = () =>
+    const pickCapture = () =>
       promptNorm
-        ? collectModelReplyTextForPrompt(text)
-        : collectModelReplyTextGlobal();
+        ? collectModelReplyForPrompt(text)
+        : collectModelReplyGlobal();
     const pickIdle = () =>
       promptNorm ? isMarkdownIdleForPrompt(text) : false;
 
     for (let i = 0; i < maxTicks; i++) {
       await sleep(pollMs);
-      const t = pickText();
-      if (t && t === lastText) stableTicks += 1;
+      const cap = pickCapture();
+      const key = captureKey(cap);
+      if (key) lastCapture = cap;
+      if (key && key === lastKey) stableTicks += 1;
       else {
         stableTicks = 0;
-        lastText = t;
+        lastKey = key;
       }
       const uiIdle = pickIdle();
       const needStable = uiIdle ? 2 : 4;
-      if (stableTicks >= needStable && lastText.length > 0) {
+      if (stableTicks >= needStable && key.length > 0) {
         postToContent({
-          assistantText: lastText,
+          assistantHtml: cap.assistantHtml,
+          assistantText: cap.assistantText,
           capture: {
             ...captureBase,
             completedAt: new Date().toISOString(),
@@ -526,8 +570,12 @@
       }
     }
 
+    const finalCap = pickCapture();
+    const use =
+      captureKey(finalCap) ? finalCap : lastCapture;
     postToContent({
-      assistantText: promptNorm ? pickText() || lastText : lastText,
+      assistantHtml: use.assistantHtml,
+      assistantText: use.assistantText,
       capture: {
         ...captureBase,
         completedAt: new Date().toISOString(),

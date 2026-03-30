@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Copy,
-  Check,
-  ExternalLink,
-  Info,
-  RefreshCw,
-} from "lucide-react";
+import { Copy, Check, ExternalLink, Info } from "lucide-react";
 import {
   API_KEY_STORAGE_KEY,
   DEFAULT_RELAY_BASE_URL,
@@ -21,11 +15,18 @@ function defaultV1BaseUrl(): string {
 
 type ClientTab = "openai" | "gemini";
 
+type CopiedBlock =
+  | "openai-py"
+  | "openai-curl"
+  | "gemini-urls"
+  | "gemini-curl-gen"
+  | "gemini-curl-stream"
+  | "gemini-py";
+
 export const ApiUrlSection = () => {
   const [tab, setTab] = useState<ClientTab>("openai");
   const [copiedBase, setCopiedBase] = useState(false);
-  const [copiedCurl, setCopiedCurl] = useState(false);
-  const [copiedGeminiCurl, setCopiedGeminiCurl] = useState(false);
+  const [copiedBlock, setCopiedBlock] = useState<CopiedBlock | null>(null);
   const [cfg, setCfg] = useState<OpenAIClientConfig>(() => ({
     v1BaseUrl: defaultV1BaseUrl(),
     apiKey: "",
@@ -95,6 +96,13 @@ export const ApiUrlSection = () => {
     setTimeout(() => setCopiedBase(false), 2000);
   };
 
+  const copyBlock = (text: string, id: CopiedBlock) => {
+    if (!text.trim()) return;
+    void navigator.clipboard.writeText(text);
+    setCopiedBlock(id);
+    setTimeout(() => setCopiedBlock(null), 2000);
+  };
+
   const pyExample = `from openai import OpenAI
 
 client = OpenAI(
@@ -141,27 +149,19 @@ r.raise_for_status()
 print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
     : "";
 
-  const copyCurl = () => {
-    if (!apiKey) return;
-    const oneLine = curlExample
-      .replace(/\\\n[ \t]*/g, " ")
-      .replace(/[ \t]{2,}/g, " ")
-      .trim();
-    void navigator.clipboard.writeText(oneLine);
-    setCopiedCurl(true);
-    setTimeout(() => setCopiedCurl(false), 2000);
-  };
+  const geminiExampleUrlsText = `${geminiGenerateUrl}\n${geminiStreamUrl}`;
 
-  const copyGeminiCurl = () => {
-    if (!apiKey) return;
-    const oneLine = geminiCurlGenerate
-      .replace(/\\\n[ \t]*/g, " ")
-      .replace(/[ \t]{2,}/g, " ")
-      .trim();
-    void navigator.clipboard.writeText(oneLine);
-    setCopiedGeminiCurl(true);
-    setTimeout(() => setCopiedGeminiCurl(false), 2000);
-  };
+  const CopySnippetBtn = ({ id, text }: { id: CopiedBlock; text: string }) => (
+    <button
+      type="button"
+      onClick={() => copyBlock(text, id)}
+      className="flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300 font-medium shrink-0"
+      aria-label="Copy code as shown"
+    >
+      {copiedBlock === id ? <Check size={16} /> : <Copy size={16} />}
+      {copiedBlock === id ? "Copied" : "Copy"}
+    </button>
+  );
 
   const tabBtn =
     "px-4 py-2 text-sm font-medium rounded-lg transition-colors border border-transparent";
@@ -252,7 +252,12 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
             </div>
 
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
-              <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-2 text-sm">Python</h3>
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Python</h3>
+                {apiKey ? (
+                  <CopySnippetBtn id="openai-py" text={pyExample} />
+                ) : null}
+              </div>
               {apiKey ? (
                 <pre className="bg-white border border-slate-200 rounded-lg p-3 overflow-x-auto dark:bg-slate-950 dark:border-slate-700">
                   <code className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre">{pyExample}</code>
@@ -265,15 +270,9 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
               <div className="flex items-center justify-between mb-2 gap-2">
                 <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">curl</h3>
-                <button
-                  type="button"
-                  onClick={copyCurl}
-                  disabled={!apiKey}
-                  className="flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300 font-medium disabled:opacity-50"
-                >
-                  {copiedCurl ? <Check size={16} /> : <Copy size={16} />}
-                  {copiedCurl ? "Copied one-liner" : "Copy as one line"}
-                </button>
+                {apiKey ? (
+                  <CopySnippetBtn id="openai-curl" text={curlExample} />
+                ) : null}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
                 <code className="bg-white dark:bg-slate-900 px-1 rounded">Authorization: Bearer</code>{" "}
@@ -347,9 +346,12 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
             </div>
 
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
-              <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-2 text-sm">
-                Example URLs ({geminiModel})
-              </h3>
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                  Example URLs ({geminiModel})
+                </h3>
+                <CopySnippetBtn id="gemini-urls" text={geminiExampleUrlsText} />
+              </div>
               <p className="text-xs font-mono text-slate-700 dark:text-slate-300 break-all mb-2">
                 {geminiGenerateUrl}
               </p>
@@ -361,15 +363,9 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
               <div className="flex items-center justify-between mb-2 gap-2">
                 <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">curl (generateContent)</h3>
-                <button
-                  type="button"
-                  onClick={copyGeminiCurl}
-                  disabled={!apiKey}
-                  className="flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300 font-medium disabled:opacity-50"
-                >
-                  {copiedGeminiCurl ? <Check size={16} /> : <Copy size={16} />}
-                  {copiedGeminiCurl ? "Copied one-liner" : "Copy as one line"}
-                </button>
+                {apiKey ? (
+                  <CopySnippetBtn id="gemini-curl-gen" text={geminiCurlGenerate} />
+                ) : null}
               </div>
               {apiKey ? (
                 <pre className="bg-white border border-slate-200 rounded-lg p-3 overflow-x-auto dark:bg-slate-950 dark:border-slate-700 mb-3">
@@ -378,7 +374,14 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
               ) : (
                 <p className="text-sm text-slate-500 dark:text-slate-400 py-2 mb-3">Loading api_key…</p>
               )}
-              <h4 className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">streamGenerateContent (SSE)</h4>
+              <div className="flex items-center justify-between mb-1 gap-2">
+                <h4 className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                  streamGenerateContent (SSE)
+                </h4>
+                {apiKey ? (
+                  <CopySnippetBtn id="gemini-curl-stream" text={geminiCurlStream} />
+                ) : null}
+              </div>
               {apiKey ? (
                 <pre className="bg-white border border-slate-200 rounded-lg p-3 overflow-x-auto dark:bg-slate-950 dark:border-slate-700">
                   <code className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre">{geminiCurlStream}</code>
@@ -387,7 +390,12 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
             </div>
 
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
-              <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-2 text-sm">Python (requests)</h3>
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Python (requests)</h3>
+                {apiKey ? (
+                  <CopySnippetBtn id="gemini-py" text={geminiPyExample} />
+                ) : null}
+              </div>
               {apiKey ? (
                 <pre className="bg-white border border-slate-200 rounded-lg p-3 overflow-x-auto dark:bg-slate-950 dark:border-slate-700">
                   <code className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre">{geminiPyExample}</code>

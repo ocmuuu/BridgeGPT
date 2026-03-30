@@ -817,6 +817,11 @@ body {
     background: var(--main-bg);
   }
 
+  /* iOS Safari zooms the viewport when focusing inputs with font-size < 16px */
+  .composer-input {
+    font-size: 16px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .sidebar,
     .sidebar-backdrop {

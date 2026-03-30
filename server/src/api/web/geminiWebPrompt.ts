@@ -23,7 +23,8 @@ function geminiContentToText(content: unknown): string {
 
 /**
  * Latest user turn for gemini.google.com (thread context stays in the tab).
- * Aligns with server-side prompt used in emit payload.
+ * Emitted as `promptForChatgpt` on every relay → extension request; the extension does not
+ * duplicate this logic.
  */
 export function buildPromptForGeminiWeb(body: unknown): string {
   if (!body || typeof body !== "object") {

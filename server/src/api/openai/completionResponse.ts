@@ -1,6 +1,6 @@
 import { randomId, randomSystemFingerprint } from "../shared/randomId.js";
 import { extractAssistantContent } from "./assistantContent.js";
-import { buildUsage } from "./messagePrompt.js";
+import { buildUsage } from "../web/chatgptWebPrompt.js";
 
 export function toOpenAICompletion(
   clientPayload: unknown,
