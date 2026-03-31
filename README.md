@@ -347,7 +347,7 @@ npm run start -w @bridgegpt/server
 | New tab on every request after **extension reload** | Service worker restarted; in-memory tab mapping is lost. Chrome should re-inject content scripts—if `tabs.sendMessage` fails once, the extension may open a **new** tab. Refresh the existing provider tab or send a second request after reload. |
 | Empty or wrong replies (ChatGPT) | UI selectors may need an update after a site redesign; check the browser console on the ChatGPT tab. |
 | Empty, stale, or wrong replies (Gemini) | Ensure **gemini.google.com** is logged in; multi-turn answers are matched to the prompt sent for that request—see extension `gemini-page` logic if the UI changes. |
-| Empty or wrong replies (Grok) | Ensure **grok.com** is logged in; DOM selectors may need updates after site changes—see extension `grok-page` and `GrokWebProvider`. |
+| Empty or wrong replies (Grok) | Stay signed in on **grok.com**. The extension reads the **current turn** assistant body (inside `#last-reply-container` / `.response-content-markdown`), not older bubbles, user echoes, or the thinking header—short preview lines may be ignored until the full answer stabilizes. After a site redesign, update `grok-page` / `GrokWebProvider`. |
 | CORS from a web app | Relay enables permissive CORS for API use; for cookie-based browsers, prefer **server-side** calls to the relay. |
 
 ---

@@ -347,7 +347,7 @@ npm run start -w @bridgegpt/server
 | **扩展 reload** 后每次请求都新开标签 | Service Worker 重启后内存中的 tab 映射会丢失；若首次 `sendMessage` 因内容脚本未就绪失败，扩展会按逻辑**新建标签**。可刷新已有页面或重试第二次请求。 |
 | 回复为空或异常（ChatGPT） | 站点改版后选择器可能需更新；查看对应标签页控制台。 |
 | 回复为空、重复上一轮或异常（Gemini） | 确认 **gemini.google.com** 已登录；多轮场景下扩展会按**本次 prompt** 对齐会话块，若 UI 大改需同步更新 `gemini-page` 等逻辑。 |
-| 回复为空或异常（Grok） | 确认 **grok.com** 已登录；站点改版后需更新扩展中的 `grok-page` / `GrokWebProvider` 选择器。 |
+| 回复为空或异常（Grok） | 确认 **grok.com** 已登录。扩展只采集**当前轮**助手正文（`#last-reply-container` 内 `.response-content-markdown`），不会把更早的气泡、用户消息或「思考」条当成回复；流式阶段过短的英文预览会等到正文稳定后再结束。站点改版后需更新 `grok-page` / `GrokWebProvider`。 |
 | 网页端跨域 CORS | 中继对 API 使用较宽松的 CORS；若涉及浏览器 Cookie，更推荐在**服务端**调用中继。 |
 
 ---

@@ -346,6 +346,17 @@
     return s.trim().replace(/\s+/g, " ");
   }
 
+  /** User rows use `items-end`, assistant rows `items-start` (same `response-*` wrapper id). */
+  function isUserMessageMarkdown(el: HTMLElement): boolean {
+    const row = el.closest('div[id^="response-"]');
+    if (!(row instanceof HTMLElement)) return false;
+    return row.classList.contains("items-end");
+  }
+
+  function isInsideThinkingUi(el: HTMLElement): boolean {
+    return !!el.closest(".thinking-container");
+  }
+
   /** Grok placeholder replies when the real user text never reached the model. */
   function isAssistantBoilerplate(text: string): boolean {
     const t = text.trim();
@@ -365,40 +376,82 @@
     return false;
   }
 
+  /**
+   * Only read `.response-content-markdown` under assistant rows (not user, not thinking UI).
+   * Broad `.prose` selectors pulled in thinking labels / wrong bubbles and caused short
+   * English “preview” text to stabilize before the real answer finished streaming.
+   */
   function collectLatestAssistantPlain(promptNorm: string): string {
     const main = document.querySelector("main");
     if (!main) return "";
     const exclude = excludeComposerTree();
 
-    const candidates: HTMLElement[] = [];
-    const addAll = (sel: string) => {
-      for (const node of main.querySelectorAll(sel)) {
+    const collectFrom = (root: ParentNode): HTMLElement[] => {
+      const out: HTMLElement[] = [];
+      for (const node of root.querySelectorAll(".response-content-markdown")) {
         if (!(node instanceof HTMLElement)) continue;
         if (exclude && exclude.contains(node)) continue;
-        candidates.push(node);
+        if (node.closest("form")) continue;
+        if (isInsideThinkingUi(node)) continue;
+        if (isUserMessageMarkdown(node)) continue;
+        out.push(node);
       }
+      return out;
     };
-    addAll('#last-reply-container .response-content-markdown');
-    addAll(".message-bubble .response-content-markdown");
-    addAll(".flex.flex-col.prose");
-    addAll(".prose");
+
+    const lastReply = document.querySelector("#last-reply-container");
+    const inLast = lastReply ? collectFrom(lastReply) : [];
+    /** If `#last-reply-container` exists but assistant markdown is not there yet, do not fall back to older turns in `main`. */
+    const candidates =
+      inLast.length > 0
+        ? inLast
+        : lastReply
+          ? []
+          : collectFrom(main);
+
+    const score = (node: HTMLElement): number => {
+      const inLastEl = !!(lastReply && lastReply.contains(node));
+      const r = node.getBoundingClientRect();
+      const top = Number.isFinite(r.top) ? r.top : 0;
+      return (inLastEl ? 1e9 : 0) + top;
+    };
+
+    const sorted = [...candidates].sort((a, b) => score(b) - score(a));
 
     let best: HTMLElement | null = null;
-    let bestTop = -1e9;
-    for (const node of candidates) {
-      if (node.closest("form")) continue;
+    let bestScore = -Infinity;
+    for (const node of sorted) {
       const t = (node.innerText || "").trim();
       if (t.length < 2) continue;
       if (promptNorm && normalizeChat(t) === promptNorm) continue;
       if (isAssistantBoilerplate(t)) continue;
       const r = node.getBoundingClientRect();
       if (r.height < 4) continue;
-      if (r.top >= bestTop) {
-        bestTop = r.top;
+      const s = score(node);
+      if (s >= bestScore) {
+        bestScore = s;
         best = node;
       }
     }
     return best ? (best.innerText || "").trim() : "";
+  }
+
+  /** Short stable English one-liner while user asked in CJK — likely preview, keep polling. */
+  function isLikelyGrokPreviewSnippet(prompt: string, reply: string): boolean {
+    if (reply.length >= 200) return false;
+    const hasCjk = /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/.test(prompt);
+    if (!hasCjk) return false;
+    const nonWs = reply.replace(/\s/g, "");
+    if (!nonWs.length) return false;
+    const nonAsciiRatio =
+      nonWs.replace(/[\u0000-\u007f]/g, "").length / nonWs.length;
+    return nonAsciiRatio < 0.15 && reply.length < 180;
+  }
+
+  function stableTicksNeeded(replyLen: number): number {
+    if (replyLen < 80) return 12;
+    if (replyLen < 240) return 8;
+    return 4;
   }
 
   async function runAsk(text: string): Promise<void> {
@@ -446,7 +499,13 @@
         stableTicks = 0;
         lastText = cur;
       }
-      if (stableTicks >= 3 && cur.length > 0) {
+      const needStable = stableTicksNeeded(cur.length);
+      const previewSnip = isLikelyGrokPreviewSnippet(text, cur);
+      if (
+        stableTicks >= needStable &&
+        cur.length > 0 &&
+        !previewSnip
+      ) {
         postToContent({
           assistantText: cur,
           capture: {
