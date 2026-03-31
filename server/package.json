@@ -1,6 +1,6 @@
 {
   "name": "@bridgegpt/server",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "private": true,
   "description": "BridgeGPT relay: OpenAI-compatible HTTP + Socket.IO for the browser extension.",
   "type": "module",
