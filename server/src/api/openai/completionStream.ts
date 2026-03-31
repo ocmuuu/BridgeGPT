@@ -6,8 +6,9 @@ import {
   writeSseData,
   writeSseDone,
 } from "../shared/sse.js";
-import { extractAssistantContent } from "./assistantContent.js";
+import { stripGrokThinkingPreamble } from "../web/grokThinkingPreamble.js";
 import { buildUsage } from "../web/chatgptWebPrompt.js";
+import { extractAssistantContent } from "./assistantContent.js";
 
 type CompletionStreamBase = {
   id: string;
@@ -63,10 +64,14 @@ function chatCompletionChunk(
 export function sendOpenAIChatCompletionStream(
   res: Response,
   clientPayload: unknown,
-  requestBody: Record<string, unknown>
+  requestBody: Record<string, unknown>,
+  webProvider: "chatgpt" | "gemini" | "grok" = "chatgpt"
 ): void {
   const base = buildCompletionStreamBase(requestBody);
-  const content = extractAssistantContent(clientPayload);
+  let content = extractAssistantContent(clientPayload);
+  if (webProvider === "grok") {
+    content = stripGrokThinkingPreamble(content);
+  }
   const usage = buildUsage(requestBody, content);
 
   writeSseData(res, chatCompletionChunk(base, { role: "assistant" }, null));

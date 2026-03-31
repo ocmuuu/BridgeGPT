@@ -1,8 +1,10 @@
 /**
  * Page-world script for grok.com (injected as `grok-page.js`). Mirrors the Gemini
  * flow: content script posts `bridgegpt_grok_run`, we fill the composer, submit,
- * poll the main thread for the latest `.prose` block, then postMessage back.
- * DOM details may change when the site updates.
+ * poll the main thread for the latest assistant body, then postMessage back.
+ *
+ * New tabs often use Tiptap (ProseMirror) in `main form` with the real submit
+ * control hidden/disabled — use Mod+Enter to send. DOM may change on site updates.
  */
 (function () {
   const SRC_PAGE = "bridgegpt-grok-page";
@@ -16,7 +18,7 @@
   async function waitFor<T>(
     fn: () => T | null | undefined,
     timeoutMs: number,
-    interval = 120
+    interval = 140
   ): Promise<T | null> {
     const end = Date.now() + timeoutMs;
     while (Date.now() < end) {
@@ -47,6 +49,21 @@
     if (document.visibilityState !== "visible") return true;
     const r = el.getBoundingClientRect();
     return r.width >= 2 && r.height >= 2;
+  }
+
+  /** Tailwind `hidden` / ancestors with display:none — submit lives in `.hidden` on Grok. */
+  function isInHiddenAncestor(el: Element): boolean {
+    let p: Element | null = el;
+    while (p) {
+      if (p instanceof HTMLElement) {
+        const st = window.getComputedStyle(p);
+        if (st.display === "none" || st.visibility === "hidden") return true;
+        const cls = p.classList;
+        if (cls.contains("hidden") || cls.contains("invisible")) return true;
+      }
+      p = p.parentElement;
+    }
+    return false;
   }
 
   async function waitForPaintTick(): Promise<void> {
@@ -84,7 +101,19 @@
     return best;
   }
 
-  function findProseMirrorComposer(): HTMLElement | null {
+  function findProseMirrorInMainForms(): HTMLElement | null {
+    for (const form of document.querySelectorAll("main form")) {
+      const pm = form.querySelector(
+        'div.ProseMirror[contenteditable="true"], div.tiptap.ProseMirror[contenteditable="true"]'
+      );
+      if (pm instanceof HTMLElement && isProbablyVisible(pm) && !isInHiddenAncestor(pm)) {
+        return pm;
+      }
+    }
+    return null;
+  }
+
+  function findProseMirrorFallback(): HTMLElement | null {
     const root = document.querySelector("main") ?? document.body;
     let best: HTMLElement | null = null;
     let bestTop = -Infinity;
@@ -93,6 +122,7 @@
     )) {
       if (!(el instanceof HTMLElement)) continue;
       if (!isProbablyVisible(el)) continue;
+      if (isInHiddenAncestor(el)) continue;
       const r = el.getBoundingClientRect();
       if (r.top > bestTop) {
         bestTop = r.top;
@@ -102,37 +132,55 @@
     return best;
   }
 
-  function composerFormRoot(el: HTMLElement): HTMLElement | null {
-    return el.closest("form");
+  type ComposerPick = {
+    el: HTMLElement;
+    kind: "textarea" | "prose";
+    form: HTMLFormElement | null;
+  };
+
+  function pickComposer(): ComposerPick | null {
+    const pmForm = findProseMirrorInMainForms();
+    if (pmForm) {
+      return {
+        el: pmForm,
+        kind: "prose",
+        form: pmForm.closest("form"),
+      };
+    }
+    const ta = findTextareaComposer();
+    if (ta) {
+      return { el: ta, kind: "textarea", form: ta.closest("form") };
+    }
+    const pm = findProseMirrorFallback();
+    if (pm) {
+      return { el: pm, kind: "prose", form: pm.closest("form") };
+    }
+    return null;
   }
 
-  function isSubmitHidden(btn: HTMLButtonElement): boolean {
-    const st = window.getComputedStyle(btn);
-    if (st.display === "none" || st.visibility === "hidden" || st.opacity === "0") {
-      return true;
+  function findVisibleSubmitButton(form: HTMLFormElement | null): HTMLButtonElement | null {
+    if (!form) return null;
+    for (const b of form.querySelectorAll('button[type="submit"]')) {
+      if (!(b instanceof HTMLButtonElement)) continue;
+      if (b.disabled) continue;
+      if (isInHiddenAncestor(b)) continue;
+      if (!isProbablyVisible(b)) continue;
+      return b;
     }
-    const cls = btn.className?.toString() ?? "";
-    return /\binvisible\b/.test(cls);
-  }
-
-  function findSubmitButton(composer: HTMLElement): HTMLButtonElement | null {
-    const form = composerFormRoot(composer);
-    if (form) {
-      for (const b of form.querySelectorAll('button[type="submit"]')) {
-        if (b instanceof HTMLButtonElement && !isSubmitHidden(b)) return b;
+    for (const b of form.querySelectorAll("button")) {
+      if (!(b instanceof HTMLButtonElement)) continue;
+      if (b.disabled) continue;
+      if (isInHiddenAncestor(b)) continue;
+      if (!isProbablyVisible(b)) continue;
+      const al = (b.getAttribute("aria-label") || "").trim().toLowerCase();
+      if (
+        al === "submit" ||
+        al === "提交" ||
+        al.includes("send") ||
+        al.includes("傳送")
+      ) {
+        return b;
       }
-      const labeled = form.querySelector(
-        'button[type="submit"][aria-label="Submit"], button[aria-label="Submit"]'
-      );
-      if (labeled instanceof HTMLButtonElement && !isSubmitHidden(labeled)) {
-        return labeled;
-      }
-    }
-    const fallback = document.querySelector(
-      'main form button[type="submit"][aria-label="Submit"]'
-    );
-    if (fallback instanceof HTMLButtonElement && !isSubmitHidden(fallback)) {
-      return fallback;
     }
     return null;
   }
@@ -170,18 +218,30 @@
       );
     }
     const opts = { bubbles: true, composed: true } as const;
+    try {
+      el.dispatchEvent(
+        new InputEvent("beforeinput", {
+          ...opts,
+          inputType: "insertFromPaste",
+          data: text,
+        })
+      );
+    } catch {
+      /* ignore */
+    }
     el.dispatchEvent(
       new InputEvent("input", { ...opts, inputType: "insertText", data: text })
     );
     el.dispatchEvent(new Event("change", opts));
+    el.dispatchEvent(new KeyboardEvent("keyup", { ...opts, key: "a" }));
   }
 
-  async function submitComposer(
+  async function clickSubmitButton(
     composer: HTMLElement,
     btn: HTMLButtonElement
   ): Promise<void> {
     composer.focus();
-    await sleep(16);
+    await sleep(20);
     btn.focus();
     await waitForPaintTick();
     const rect = btn.getBoundingClientRect();
@@ -195,7 +255,6 @@
       clientY: cy,
       view: window,
     } as const;
-    let usedPointer = false;
     try {
       btn.dispatchEvent(
         new PointerEvent("pointerdown", {
@@ -222,60 +281,121 @@
         new MouseEvent("mouseup", { ...base, button: 0, buttons: 0 })
       );
       btn.dispatchEvent(new MouseEvent("click", { ...base, button: 0 }));
-      usedPointer = true;
     } catch {
-      /* PointerEvent missing */
+      btn.click();
     }
-    if (!usedPointer) btn.click();
+  }
 
-    await sleep(24);
-    composer.focus();
-    const ke = { bubbles: true, composed: true, cancelable: true } as const;
+  /** Grok Tiptap often uses Mod+Enter to send when type=submit is hidden/disabled. */
+  function dispatchModEnter(el: HTMLElement): void {
+    el.focus();
     const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform);
-    composer.dispatchEvent(
+    const base = { bubbles: true, composed: true, cancelable: true } as const;
+    for (const type of ["keydown", "keypress", "keyup"] as const) {
+      el.dispatchEvent(
+        new KeyboardEvent(type, {
+          ...base,
+          key: "Enter",
+          code: "Enter",
+          keyCode: 13,
+          which: 13,
+          metaKey: isMac,
+          ctrlKey: !isMac,
+        })
+      );
+    }
+  }
+
+  function dispatchPlainEnter(el: HTMLElement): void {
+    const base = { bubbles: true, composed: true, cancelable: true } as const;
+    el.dispatchEvent(
       new KeyboardEvent("keydown", {
-        ...ke,
+        ...base,
         key: "Enter",
         code: "Enter",
         keyCode: 13,
         which: 13,
-        metaKey: isMac,
-        ctrlKey: !isMac,
       })
     );
   }
 
+  async function submitFilled(
+    composer: HTMLElement,
+    form: HTMLFormElement | null,
+    _kind: "textarea" | "prose"
+  ): Promise<void> {
+    const btn = findVisibleSubmitButton(form);
+    if (btn) {
+      await clickSubmitButton(composer, btn);
+      return;
+    }
+    await sleep(100);
+    dispatchModEnter(composer);
+    await sleep(80);
+    dispatchPlainEnter(composer);
+  }
+
   function excludeComposerTree(): HTMLElement | null {
-    const ta = findTextareaComposer();
-    if (ta) return composerFormRoot(ta);
-    const pm = findProseMirrorComposer();
-    if (pm) return composerFormRoot(pm) ?? pm.closest("footer");
-    return null;
+    const pick = pickComposer();
+    if (!pick) return null;
+    if (pick.form) return pick.form;
+    return pick.el.closest("footer");
   }
 
   function normalizeChat(s: string): string {
     return s.trim().replace(/\s+/g, " ");
   }
 
-  function collectLatestAssistantPlain(): string {
+  /** Grok placeholder replies when the real user text never reached the model. */
+  function isAssistantBoilerplate(text: string): boolean {
+    const t = text.trim();
+    if (!t) return true;
+    const low = normalizeChat(t).toLowerCase();
+    if (/^參考以下內容[:：]?\s*$/i.test(t)) return true;
+    if (/^参考以下内容[:：]?\s*$/i.test(t)) return true;
+    if (/^refer to the following content[:：]?\s*$/i.test(low)) return true;
+    if (/user message only says/.test(low) && /refer to the following/i.test(low)) {
+      return true;
+    }
+    if (/請提供您要我參考的內容/.test(t) && t.length < 200) return true;
+    if (/请提供您要我参考的内容/.test(t) && t.length < 200) return true;
+    if (/please provide (the )?content (you want|for me)/i.test(t) && t.length < 200) {
+      return true;
+    }
+    return false;
+  }
+
+  function collectLatestAssistantPlain(promptNorm: string): string {
     const main = document.querySelector("main");
     if (!main) return "";
     const exclude = excludeComposerTree();
-    let best: HTMLElement | null = null;
-    let bestTop = -1e9;
-    const selectors = [".flex.flex-col.prose", ".prose"];
-    for (const sel of selectors) {
+
+    const candidates: HTMLElement[] = [];
+    const addAll = (sel: string) => {
       for (const node of main.querySelectorAll(sel)) {
         if (!(node instanceof HTMLElement)) continue;
         if (exclude && exclude.contains(node)) continue;
-        const t = (node.innerText || "").trim();
-        if (t.length < 2) continue;
-        const r = node.getBoundingClientRect();
-        if (r.height < 6) continue;
-        if (r.top >= bestTop) {
-          bestTop = r.top;
-          best = node;
-        }
+        candidates.push(node);
+      }
+    };
+    addAll('#last-reply-container .response-content-markdown');
+    addAll(".message-bubble .response-content-markdown");
+    addAll(".flex.flex-col.prose");
+    addAll(".prose");
+
+    let best: HTMLElement | null = null;
+    let bestTop = -1e9;
+    for (const node of candidates) {
+      if (node.closest("form")) continue;
+      const t = (node.innerText || "").trim();
+      if (t.length < 2) continue;
+      if (promptNorm && normalizeChat(t) === promptNorm) continue;
+      if (isAssistantBoilerplate(t)) continue;
+      const r = node.getBoundingClientRect();
+      if (r.height < 4) continue;
+      if (r.top >= bestTop) {
+        bestTop = r.top;
+        best = node;
       }
     }
     return best ? (best.innerText || "").trim() : "";
@@ -286,10 +406,8 @@
       startedAt: new Date().toISOString(),
     };
 
-    const ta = findTextareaComposer();
-    const pm = ta ? null : findProseMirrorComposer();
-    const composer = ta ?? pm;
-    if (!composer) {
+    const picked = await waitFor(pickComposer, 28000);
+    if (!picked) {
       postToContent({
         assistantText: "",
         capture: { ...captureBase, ok: false, reason: "no_input" },
@@ -298,24 +416,18 @@
       return;
     }
 
-    if (ta) fillTextarea(ta, text);
-    else fillProseMirror(pm!, text);
-
-    await sleep(120);
-    let btn = findSubmitButton(composer);
-    if (!btn) {
-      postToContent({
-        assistantText: "",
-        capture: { ...captureBase, ok: false, reason: "no_send_button" },
-        page: { href: location.href, title: document.title },
-      });
-      return;
+    const { el: composer, kind, form } = picked;
+    if (kind === "textarea") {
+      fillTextarea(composer as HTMLTextAreaElement, text);
+    } else {
+      fillProseMirror(composer, text);
     }
 
-    const before = collectLatestAssistantPlain();
-    await submitComposer(composer, btn);
+    await sleep(kind === "prose" ? 450 : 200);
 
     const want = normalizeChat(text);
+    const before = collectLatestAssistantPlain(want);
+    await submitFilled(composer, form, kind);
     let lastText = "";
     let stableTicks = 0;
     const maxTicks = 600;
@@ -323,7 +435,10 @@
 
     for (let i = 0; i < maxTicks; i++) {
       await sleep(pollMs);
-      const cur = collectLatestAssistantPlain();
+      let cur = collectLatestAssistantPlain(want);
+      if (isAssistantBoilerplate(cur)) {
+        cur = "";
+      }
       if (!cur || cur === before) continue;
       if (want && normalizeChat(cur) === want) continue;
       if (cur === lastText) stableTicks += 1;
@@ -346,7 +461,8 @@
       }
     }
 
-    const final = collectLatestAssistantPlain();
+    let final = collectLatestAssistantPlain(want);
+    if (isAssistantBoilerplate(final)) final = "";
     const use =
       final &&
       final !== before &&

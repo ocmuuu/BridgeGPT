@@ -161,6 +161,11 @@ const getOpenAIClientConfig = async (): Promise<OpenAIClientConfig> => {
   return { v1BaseUrl: await openAiV1BaseUrl(), apiKey };
 };
 
+/** Cold-tab delay before ask_question: Grok’s SPA + Tiptap need longer than ChatGPT. */
+const COLD_TAB_DELIVER_MS: Partial<Record<WebProviderId, number>> = {
+  grok: 7000,
+};
+
 /** Last-used tab per provider (memory + session storage). */
 const tabIdByProvider: Partial<Record<WebProviderId, number>> = {};
 let socket: Socket | undefined;
@@ -418,7 +423,8 @@ async function connectWS() {
                     const id = tab?.id;
                     if (id === undefined) return;
                     void rememberProviderTab(provider, id);
-                    setTimeout(() => deliver(id, "retry"), 3500);
+                    const ms = COLD_TAB_DELIVER_MS[provider] ?? 3500;
+                    setTimeout(() => deliver(id, "retry"), ms);
                   }
                 );
               }
@@ -441,7 +447,8 @@ async function connectWS() {
           const id = tab?.id;
           if (id === undefined) return;
           void rememberProviderTab(provider, id);
-          setTimeout(() => deliver(id, "retry"), 3500);
+          const ms = COLD_TAB_DELIVER_MS[provider] ?? 3500;
+          setTimeout(() => deliver(id, "retry"), ms);
         });
       } else {
         deliver(targetTabId, "primary");

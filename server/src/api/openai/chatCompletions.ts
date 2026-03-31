@@ -48,10 +48,10 @@ export async function handleChatCompletion(
   try {
     const message = await responsePromise;
     if (stream) {
-      sendOpenAIChatCompletionStream(res, message, record);
+      sendOpenAIChatCompletionStream(res, message, record, provider);
       res.end();
     } else {
-      res.json(toOpenAICompletion(message, record));
+      res.json(toOpenAICompletion(message, record, provider));
     }
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e));
