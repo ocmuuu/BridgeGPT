@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { scheduleFreshChatIfTurnLimitReached } from "../../shared/threadRefresh";
 import type {
   AskQuestionPayload,
   QuestionAnswerPayload,
@@ -41,9 +42,16 @@ export const ChatgptWebProvider = () => {
       base.relayRequest = { route: relay.route, body: relay.body };
     }
 
+    const hadNonEmptyAssistant =
+      typeof base.assistantText === "string" &&
+      base.assistantText.trim() !== "";
+
     chrome.runtime.sendMessage(
       { type: "question_answer", content: base },
-      () => void chrome.runtime.lastError
+      () => {
+        void chrome.runtime.lastError;
+        scheduleFreshChatIfTurnLimitReached("chatgpt", hadNonEmptyAssistant);
+      }
     );
   };
 

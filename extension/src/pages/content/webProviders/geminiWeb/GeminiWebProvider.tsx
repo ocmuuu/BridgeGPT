@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { scheduleFreshChatIfTurnLimitReached } from "../../shared/threadRefresh";
 import type {
   AskQuestionPayload,
   QuestionAnswerPayload,
@@ -47,7 +48,10 @@ export const GeminiWebProvider = () => {
 
     chrome.runtime.sendMessage(
       { type: "question_answer", content: base },
-      () => void chrome.runtime.lastError
+      () => {
+        void chrome.runtime.lastError;
+        scheduleFreshChatIfTurnLimitReached("gemini", hasAssistant);
+      }
     );
   };
 
