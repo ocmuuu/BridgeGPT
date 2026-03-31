@@ -46,8 +46,21 @@
     if (!el.isConnected) return false;
     const st = window.getComputedStyle(el);
     if (st.display === "none" || st.visibility === "hidden") return false;
+    // Background tabs: layout can report 0×0 even when the composer is real; still prefer it.
+    if (document.visibilityState !== "visible") return true;
     const r = el.getBoundingClientRect();
     return r.width >= 2 && r.height >= 2;
+  }
+
+  /** rAF is paused in background tabs; never block submit on it. */
+  async function waitForPaintTick(): Promise<void> {
+    if (document.visibilityState !== "visible") {
+      await sleep(50);
+      return;
+    }
+    await new Promise<void>((r) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => r()))
+    );
   }
 
   /** Last matching node in document order (bottom composer after multi-turn chat). */
@@ -214,9 +227,7 @@
     editable.focus();
     await sleep(16);
     btn.focus();
-    await new Promise<void>((r) =>
-      requestAnimationFrame(() => requestAnimationFrame(() => r()))
-    );
+    await waitForPaintTick();
 
     const rect = btn.getBoundingClientRect();
     const cx = rect.left + Math.max(1, rect.width) / 2;
