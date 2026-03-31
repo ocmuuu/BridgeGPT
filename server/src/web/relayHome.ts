@@ -75,7 +75,7 @@ export function handleRelayHome(
   const grokModel =
     typeof req.query.grok_model === "string" && req.query.grok_model.trim()
       ? req.query.grok_model.trim()
-      : "grok-3";
+      : "grok-4.2";
 
   const shell = relayChatShellHtml({
     initialUserMessage: message,

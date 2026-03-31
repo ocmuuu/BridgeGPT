@@ -191,10 +191,10 @@ curl -sS http://127.0.0.1:3456/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -H "X-Bridge-Provider: grok" \
-  -d '{"model":"grok-3","messages":[{"role":"user","content":"用一句话打招呼。"}],"stream":false}'
+  -d '{"model":"grok-4.2","messages":[{"role":"user","content":"用一句话打招呼。"}],"stream":false}'
 ```
 
-**`grok-3`** 等模型名为**占位**；实际以 **grok.com** 当前会话为准。
+**`grok-4.2`** 等模型名为**占位**；实际以 **grok.com** 当前会话为准。
 
 ### Gemini 路径（curl）
 

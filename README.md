@@ -191,10 +191,10 @@ curl -sS http://127.0.0.1:3456/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -H "X-Bridge-Provider: grok" \
-  -d '{"model":"grok-3","messages":[{"role":"user","content":"Say hi in one sentence."}],"stream":false}'
+  -d '{"model":"grok-4.2","messages":[{"role":"user","content":"Say hi in one sentence."}],"stream":false}'
 ```
 
-Model names such as **`grok-3`** are **placeholders**; the live session follows whatever you use on **grok.com**.
+Model names such as **`grok-4.2`** are **placeholders**; the live session follows whatever you use on **grok.com**.
 
 ### Gemini path (`curl`)
 

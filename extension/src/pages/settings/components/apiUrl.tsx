@@ -123,7 +123,7 @@ print(response.choices[0].message.content)`;
   -H "Content-Type: application/json" \\
   -d '{"model":"gpt-5","messages":[{"role":"user","content":"Hello"}]}'`;
 
-  const grokModel = "grok-3";
+  const grokModel = "grok-4.2";
   const grokCurlExample = `curl -sS "${v1BaseUrl}/chat/completions" \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\

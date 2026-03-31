@@ -39,7 +39,7 @@ export function relayChatShellHtml(boot: RelayChatBoot): string {
       "gemini-3.1-pro",
       "gemini-3.1",
     ],
-    grokModels: ["grok-3", "grok-3-mini"],
+    grokModels: ["grok-4.2"],
     ...boot,
     logoUrl: RELAY_LOGO_URL,
   };
