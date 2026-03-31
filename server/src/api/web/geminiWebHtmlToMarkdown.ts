@@ -1,4 +1,6 @@
 import TurndownService from "turndown";
+// GFM table rules only (Gemini wraps tables in <table-block> with footer buttons).
+import { tables } from "turndown-plugin-gfm";
 
 let service: TurndownService | null = null;
 
@@ -11,8 +13,20 @@ function getTurndown(): TurndownService {
       codeBlockStyle: "fenced",
       emDelimiter: "*",
     });
+    service.use(tables);
   }
   return service;
+}
+
+/** Gemini Angular shell: keep inner <table> only so Turndown does not ingest footer UI. */
+function unwrapGeminiTableBlocks(html: string): string {
+  return html.replace(
+    /<table-block\b[^>]*>([\s\S]*?)<\/table-block>/gi,
+    (_full, inner: string) => {
+      const m = inner.match(/<table\b[^>]*>[\s\S]*?<\/table>/i);
+      return m ? m[0] : "";
+    }
+  );
 }
 
 /**
@@ -24,7 +38,11 @@ export function geminiWebHtmlToMarkdown(html: string): string {
   const trimmed = html.trim();
   if (!trimmed) return "";
   try {
-    return getTurndown().turndown(trimmed).replace(/\n{3,}/g, "\n\n").trim();
+    const prepared = unwrapGeminiTableBlocks(trimmed);
+    return getTurndown()
+      .turndown(prepared)
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
   } catch {
     return "";
   }
