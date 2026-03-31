@@ -12,6 +12,9 @@ export type ChatMessage = {
   /** Assistant: backend & model used for this reply */
   sourceBackend?: "openai" | "gemini";
   sourceModel?: string;
+  /** User: backend & model selected when this message was sent (persisted on the turn). */
+  composerBackend?: "openai" | "gemini";
+  composerModel?: string;
 };
 
 type Props = {

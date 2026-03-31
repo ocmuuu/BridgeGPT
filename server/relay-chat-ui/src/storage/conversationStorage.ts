@@ -131,6 +131,32 @@ export function deriveConversationTitle(
   return `${oneLine.slice(0, maxLen)}…`;
 }
 
+/** Model used for the first message in history (first turn with a non-empty model). */
+export function deriveListModelFromTurns(turns: StoredTurn[]): string {
+  for (const t of turns) {
+    if (typeof t.model === "string" && t.model.trim()) return t.model.trim();
+  }
+  return "";
+}
+
+/** Sidebar / session row: show starter model, not the latest composer selection. */
+export function sessionListModelLabel(s: StoredConversation): string {
+  return deriveListModelFromTurns(s.turns) || s.model || s.backend;
+}
+
+/** True when role/content and per-turn backend+model match (order-sensitive). */
+export function turnsContentEqual(a: StoredTurn[], b: StoredTurn[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i]!;
+    const y = b[i]!;
+    if (x.role !== y.role || x.content !== y.content) return false;
+    if (x.backend !== y.backend) return false;
+    if ((x.model ?? "") !== (y.model ?? "")) return false;
+  }
+  return true;
+}
+
 export function buildOrUpdateSession(
   existing: StoredConversation | undefined,
   opts: {
@@ -153,10 +179,12 @@ export function buildOrUpdateSession(
       turns: opts.turns,
     };
   }
+  const sameTurns = turnsContentEqual(existing.turns, opts.turns);
   return {
     ...existing,
     title,
-    updatedAt: now,
+    /** Only bump when the conversation actually changed (new/edit message), not on tab switch re-save. */
+    updatedAt: sameTurns ? existing.updatedAt : now,
     backend: opts.backend,
     model: opts.model,
     turns: opts.turns,

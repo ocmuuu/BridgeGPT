@@ -21,6 +21,7 @@
     {
       "matches": [
         "https://chatgpt.com/*",
+        "https://*.chatgpt.com/*",
         "https://chat.openai.com/*",
         "https://gemini.google.com/*"
       ],
@@ -41,7 +42,17 @@
       "resources": ["chatgpt-page.js"],
       "matches": [
         "https://chatgpt.com/*",
+        "https://*.chatgpt.com/*",
         "https://chat.openai.com/*"
+      ]
+    },
+    {
+      "resources": ["assets/*.js"],
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://*.chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://gemini.google.com/*"
       ]
     },
     {

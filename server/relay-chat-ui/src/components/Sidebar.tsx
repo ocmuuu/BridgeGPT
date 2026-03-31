@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { useI18n } from "../i18n/I18nProvider.js";
+import { sessionListModelLabel } from "../storage/conversationStorage";
 import { RelaySetupHint } from "./RelaySetupHint.js";
 import type { StoredConversation } from "../storage/conversationStorage";
 import type { RelayChatBoot } from "../types/boot";
@@ -183,7 +184,7 @@ export function Sidebar({
                       <span className="sidebar-history-title">{s.title}</span>
                       <span className="sidebar-history-meta">
                         {formatSessionWhen(s.updatedAt)} ·{" "}
-                        {s.model || s.backend}
+                        {sessionListModelLabel(s)}
                       </span>
                     </button>
                     <button

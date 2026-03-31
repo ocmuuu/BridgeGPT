@@ -83,7 +83,12 @@ function useMobileNavLayout(): boolean {
 function messagesToTurns(messages: ChatMessage[]): StoredTurn[] {
   return messages.map((m) => {
     if (m.role === "user") {
-      return { role: "user", content: m.content };
+      const turn: StoredTurn = { role: "user", content: m.content };
+      if (m.composerBackend) {
+        turn.backend = m.composerBackend;
+        turn.model = m.composerModel ?? "";
+      }
+      return turn;
     }
     const turn: StoredTurn = { role: "assistant", content: m.content };
     if (m.sourceBackend) {
@@ -104,6 +109,9 @@ function turnsToChatMessages(
         id: crypto.randomUUID(),
         role: "user",
         content: t.content,
+        ...(t.backend && t.model !== undefined
+          ? { composerBackend: t.backend, composerModel: t.model }
+          : {}),
       };
     }
     return {
@@ -258,8 +266,6 @@ export default function App({ boot }: Props) {
     const s = sessionsRef.current.find((x) => x.id === id);
     if (!s) return;
     setActiveConversationId(id);
-    setBackend(s.backend);
-    setModel(defaultModelForBackend(s.backend, boot));
     setMessages(
       turnsToChatMessages(s.turns, { backend: s.backend, model: s.model })
     );
@@ -300,8 +306,6 @@ export default function App({ boot }: Props) {
     setActiveConversationId(aid);
     const cur = next.sessions.find((s) => s.id === aid);
     if (cur) {
-      setBackend(cur.backend);
-      setModel(defaultModelForBackend(cur.backend, boot));
       setMessages(
         turnsToChatMessages(cur.turns, {
           backend: cur.backend,
@@ -321,7 +325,13 @@ export default function App({ boot }: Props) {
     setError("");
     setMessages((prev) => [
       ...prev,
-      { id: userId, role: "user", content: t },
+      {
+        id: userId,
+        role: "user",
+        content: t,
+        composerBackend: backend,
+        composerModel: model,
+      },
       {
         id: asstId,
         role: "assistant",
