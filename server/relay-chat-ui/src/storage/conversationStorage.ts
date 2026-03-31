@@ -6,7 +6,7 @@
 export type StoredTurn = {
   role: "user" | "assistant";
   content: string;
-  backend?: "openai" | "gemini";
+  backend?: "openai" | "gemini" | "grok";
   model?: string;
 };
 
@@ -19,7 +19,7 @@ export type StoredConversation = {
   title: string;
   createdAt: number;
   updatedAt: number;
-  backend: "openai" | "gemini";
+  backend: "openai" | "gemini" | "grok";
   model: string;
   turns: StoredTurn[];
 };
@@ -64,7 +64,8 @@ function isStoredTurn(v: unknown): v is StoredTurn {
   if (
     o.backend !== undefined &&
     o.backend !== "openai" &&
-    o.backend !== "gemini"
+    o.backend !== "gemini" &&
+    o.backend !== "grok"
   ) {
     return false;
   }
@@ -81,7 +82,13 @@ function parseV2(raw: unknown): RelayChatPersistedState | null {
     if (!s || typeof s !== "object") continue;
     const r = s as Record<string, unknown>;
     if (typeof r.id !== "string") continue;
-    if (r.backend !== "openai" && r.backend !== "gemini") continue;
+    if (
+      r.backend !== "openai" &&
+      r.backend !== "gemini" &&
+      r.backend !== "grok"
+    ) {
+      continue;
+    }
     if (typeof r.model !== "string") continue;
     if (typeof r.title !== "string") continue;
     if (typeof r.createdAt !== "number" || typeof r.updatedAt !== "number")
@@ -162,7 +169,7 @@ export function buildOrUpdateSession(
   opts: {
     id: string;
     turns: StoredTurn[];
-    backend: "openai" | "gemini";
+    backend: "openai" | "gemini" | "grok";
     model: string;
   }
 ): StoredConversation {

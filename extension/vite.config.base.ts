@@ -44,6 +44,7 @@ export default defineConfig({
       input: {
         "chatgpt-page": resolve(__dirname, "src/pages/content/chatgpt-page.ts"),
         "gemini-page": resolve(__dirname, "src/pages/content/gemini-page.ts"),
+        "grok-page": resolve(__dirname, "src/pages/content/grok-page.ts"),
         settingsHtml: resolve(__dirname, "src/pages/settings/index.html"),
       },
       output: {

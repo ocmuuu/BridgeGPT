@@ -284,7 +284,7 @@ Build the extension with your public relay URL (**trailing slash**):
 VITE_API_BASE_URL=https://relay.example.com/ npm run build:chrome
 ```
 
-Install that build in the browser that stays logged in to **chatgpt.com** / **gemini.google.com** as needed. See the main [README](../README.md) for API and security notes.
+Install that build in the browser that stays logged in to **chatgpt.com**, **gemini.google.com**, and/or **grok.com** as needed. See the main [README](../README.md) for API and security notes.
 
 ---
 

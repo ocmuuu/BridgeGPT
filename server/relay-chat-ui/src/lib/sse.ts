@@ -66,7 +66,7 @@ export async function readSseStream(
   res: Response,
   sseBlockSep: string,
   sseLineSep: string,
-  backend: "openai" | "gemini",
+  backend: "openai" | "gemini" | "grok",
   onDelta: (fullText: string) => void
 ): Promise<string> {
   const reader = res.body!.getReader();

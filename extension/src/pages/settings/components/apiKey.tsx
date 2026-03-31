@@ -88,7 +88,7 @@ export const ApiKeySection = () => {
     if (
       !window.confirm(
         "Generate a new api_key?\n\n" +
-          "Update every client (OpenAI SDK, Gemini HTTP, curl, web chat cookie). " +
+          "Update every client (OpenAI SDK, Gemini / Grok HTTP, curl, web chat cookie). " +
           "Open web chat again from here or use ?api_key= once. " +
           "The old key will stop working for this extension."
       )

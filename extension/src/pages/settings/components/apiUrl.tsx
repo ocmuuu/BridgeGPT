@@ -13,7 +13,7 @@ function defaultV1BaseUrl(): string {
   return `${DEFAULT_RELAY_BASE_URL.replace(/\/+$/, "")}/v1`;
 }
 
-type ClientTab = "openai" | "gemini";
+type ClientTab = "openai" | "gemini" | "grok";
 
 type CopiedBlock =
   | "openai-py"
@@ -21,7 +21,9 @@ type CopiedBlock =
   | "gemini-urls"
   | "gemini-curl-gen"
   | "gemini-curl-stream"
-  | "gemini-py";
+  | "gemini-py"
+  | "grok-curl"
+  | "grok-py";
 
 export const ApiUrlSection = () => {
   const [tab, setTab] = useState<ClientTab>("openai");
@@ -121,6 +123,27 @@ print(response.choices[0].message.content)`;
   -H "Content-Type: application/json" \\
   -d '{"model":"gpt-5","messages":[{"role":"user","content":"Hello"}]}'`;
 
+  const grokModel = "grok-3";
+  const grokCurlExample = `curl -sS "${v1BaseUrl}/chat/completions" \\
+  -H "Authorization: Bearer ${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -H "X-Bridge-Provider: grok" \\
+  -d '{"model":"${grokModel}","messages":[{"role":"user","content":"Hello"}]}'`;
+
+  const grokPyExample = `from openai import OpenAI
+
+client = OpenAI(
+    base_url="${v1BaseUrl}",
+    api_key="${apiKey}",
+    default_headers={"X-Bridge-Provider": "grok"},
+)
+
+response = client.chat.completions.create(
+    model="${grokModel}",
+    messages=[{"role": "user", "content": "Hello"}],
+)
+print(response.choices[0].message.content)`;
+
   const geminiModel = "gemini-3.1-flash";
   const geminiGenerateUrl = `${relayOrigin}/v1beta/models/${geminiModel}:generateContent`;
   const geminiStreamUrl = `${relayOrigin}/v1beta/models/${geminiModel}:streamGenerateContent`;
@@ -201,6 +224,16 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
               onClick={() => setTab("gemini")}
             >
               Gemini API
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "grok"}
+              id="tab-grok"
+              className={`${tabBtn} ${tab === "grok" ? tabActive : tabIdle}`}
+              onClick={() => setTab("grok")}
+            >
+              Grok (OpenAI route)
             </button>
           </div>
         </div>
@@ -300,7 +333,7 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
               </a>
             </div>
           </div>
-        ) : (
+        ) : tab === "gemini" ? (
           <div role="tabpanel" aria-labelledby="tab-gemini">
             <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 leading-relaxed">
               Same relay host as your OpenAI <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">base_url</code>,
@@ -409,6 +442,89 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
               Alternative: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">POST /v1/chat/completions</code> with header{" "}
               <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">X-Bridge-Provider: gemini</code> still routes to the Gemini tab.
             </p>
+          </div>
+        ) : (
+          <div role="tabpanel" aria-labelledby="tab-grok">
+            <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 leading-relaxed">
+              Same <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">base_url</code> and{" "}
+              <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">POST …/v1/chat/completions</code> as the OpenAI-compatible tab,
+              but add the header{" "}
+              <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">X-Bridge-Provider: grok</code> so the extension uses{" "}
+              <strong>grok.com</strong> instead of ChatGPT.
+            </p>
+            <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-2 mb-6 list-disc list-inside">
+              <li>
+                Model names like <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{grokModel}</code> are labels; the live Grok session picks the real model.
+              </li>
+              <li>
+                Streaming (<code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">&quot;stream&quot;: true</code>) works the same as ChatGPT.
+              </li>
+            </ul>
+
+            <div className="bg-violet-50 border border-violet-200/80 rounded-xl p-4 mb-4 dark:bg-violet-950/40 dark:border-violet-800/60">
+              <div className="flex items-start gap-3">
+                <Info className="text-violet-600 dark:text-violet-400 flex-shrink-0 mt-0.5" size={20} />
+                <div>
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Steps</h3>
+                  <ol className="text-sm text-slate-700 dark:text-slate-300 space-y-1 list-decimal list-inside">
+                    <li>Click Connect and stay signed in on grok.com</li>
+                    <li>
+                      Python / curl below embed your api_key—copy and run (no placeholders)
+                    </li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Python (OpenAI SDK)</h3>
+                {apiKey ? (
+                  <CopySnippetBtn id="grok-py" text={grokPyExample} />
+                ) : null}
+              </div>
+              {apiKey ? (
+                <pre className="bg-white border border-slate-200 rounded-lg p-3 overflow-x-auto dark:bg-slate-950 dark:border-slate-700">
+                  <code className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre">{grokPyExample}</code>
+                </pre>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">Loading api_key…</p>
+              )}
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">curl</h3>
+                {apiKey ? (
+                  <CopySnippetBtn id="grok-curl" text={grokCurlExample} />
+                ) : null}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                Requires{" "}
+                <code className="bg-white dark:bg-slate-900 px-1 rounded">X-Bridge-Provider: grok</code>{" "}
+                in addition to <code className="bg-white dark:bg-slate-900 px-1 rounded">Authorization: Bearer</code>.
+              </p>
+              {apiKey ? (
+                <pre className="bg-white border border-slate-200 rounded-lg p-3 overflow-x-auto dark:bg-slate-950 dark:border-slate-700">
+                  <code className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre">{grokCurlExample}</code>
+                </pre>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">Loading api_key…</p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
+              <p className="text-sm text-slate-600 dark:text-slate-400">OpenAI Python SDK</p>
+              <a
+                href="https://github.com/openai/openai-python"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300 font-medium text-sm transition-colors"
+              >
+                Docs
+                <ExternalLink size={16} />
+              </a>
+            </div>
           </div>
         )}
       </div>

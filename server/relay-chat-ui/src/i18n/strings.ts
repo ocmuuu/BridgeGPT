@@ -9,6 +9,7 @@ export type Messages = {
   backend: string;
   backendOpenAI: string;
   backendGemini: string;
+  backendGrok: string;
   history: string;
   deleteSession: string;
   deleteSessionAria: (title: string) => string;
@@ -42,6 +43,7 @@ export type Messages = {
   replySource: string;
   platformOpenAI: string;
   platformGemini: string;
+  platformGrok: string;
   composerSend: string;
   placeholderHasKey: string;
   placeholderNoKey: string;
@@ -56,6 +58,7 @@ const en: Messages = {
   backend: "Backend",
   backendOpenAI: "ChatGPT · OpenAI API",
   backendGemini: "Gemini · Google API",
+  backendGrok: "Grok · OpenAI API (grok.com)",
   history: "History",
   deleteSession: "Delete",
   deleteSessionAria: (title) => `Delete ${title}`,
@@ -81,7 +84,7 @@ const en: Messages = {
   closeNotice: "Close notice",
   emptyTitle: "BridgeGPT",
   emptySub:
-    "Messages relay to your signed-in ChatGPT or Gemini tab.",
+    "Messages relay to your signed-in ChatGPT, Gemini, or Grok tab.",
   emptyNoKeyStatus: "No api_key for this site — chat is unavailable.",
   emptyNoKeyHow:
     "Open the sidebar and follow the Set up card: BridgeGPT extension → Settings → Open web chat, or visit once with ?api_key=… in the URL.",
@@ -92,6 +95,7 @@ const en: Messages = {
   replySource: "Reply source",
   platformOpenAI: "ChatGPT · OpenAI",
   platformGemini: "Gemini · Google",
+  platformGrok: "Grok · xAI",
   composerSend: "Send",
   placeholderHasKey: "Message…",
   placeholderNoKey: "Open from BridgeGPT extension Settings…",
@@ -106,6 +110,7 @@ const zh: Messages = {
   backend: "后端",
   backendOpenAI: "ChatGPT · OpenAI API",
   backendGemini: "Gemini · Google API",
+  backendGrok: "Grok · OpenAI 兼容 API（grok.com）",
   history: "历史",
   deleteSession: "删除",
   deleteSessionAria: (title) => `删除 ${title}`,
@@ -129,7 +134,7 @@ const zh: Messages = {
     "对话记录只保存在本浏览器（Chrome 本地存储 / Local Storage），中继服务器不会持久化你的聊天内容。",
   closeNotice: "关闭提示",
   emptyTitle: "BridgeGPT",
-  emptySub: "消息将转发到你已登录的 ChatGPT 或 Gemini 网页标签页。",
+  emptySub: "消息将转发到你已登录的 ChatGPT、Gemini 或 Grok 网页标签页。",
   emptyNoKeyStatus: "没有 api_key，对话功能不可用。",
   emptyNoKeyHow:
     "请打开侧栏，按「设置」里的说明操作：从 BridgeGPT 扩展「设置」→「打开网页对话」打开本页，或使用带 ?api_key= 的链接访问一次。",
@@ -140,6 +145,7 @@ const zh: Messages = {
   replySource: "回复来源",
   platformOpenAI: "ChatGPT · OpenAI",
   platformGemini: "Gemini · Google",
+  platformGrok: "Grok · xAI",
   composerSend: "发送",
   placeholderHasKey: "输入消息…",
   placeholderNoKey: "请从 BridgeGPT 扩展「设置」打开本页…",

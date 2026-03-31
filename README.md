@@ -7,7 +7,7 @@
     style="max-width: 100%; height: auto; max-height: 128px;"
   />
   <h1>BridgeGPT</h1>
-  <p><strong>Self-hosted relay: drive <em>ChatGPT</em> or <em>Google Gemini</em> in the browser through OpenAI- and Gemini-style HTTP APIs</strong></p>
+  <p><strong>Self-hosted relay: drive <em>ChatGPT</em>, <em>Google Gemini</em>, or <em>Grok</em> in the browser through OpenAI- and Gemini-style HTTP APIs</strong></p>
   <p>Browser extension + small Node server. You control the relay and the browser—no dependency on a third-party hosted bridge.</p>
 </div>
 
@@ -40,9 +40,9 @@
 
 ## What it does
 
-BridgeGPT lets client applications call **`/v1/chat/completions`** (OpenAI-style) and **`/v1beta/models/...:generateContent`** (Gemini-style) against a relay you run. The relay forwards work to a **Chrome (or Firefox) extension** that drives **https://chatgpt.com** / **https://chat.openai.com** and/or **https://gemini.google.com** in normal logged-in tabs. Replies are turned into JSON or SSE so existing **OpenAI** or **Gemini** client patterns can often work with only `base_url` and `api_key` changes.
+BridgeGPT lets client applications call **`/v1/chat/completions`** (OpenAI-style) and **`/v1beta/models/...:generateContent`** (Gemini-style) against a relay you run. The relay forwards work to a **Chrome (or Firefox) extension** that drives **https://chatgpt.com** / **https://chat.openai.com**, **https://gemini.google.com**, and/or **https://grok.com** in normal logged-in tabs. Replies are turned into JSON or SSE so existing **OpenAI** or **Gemini** client patterns can often work with only `base_url` and `api_key` changes.
 
-**This is not** the official OpenAI or Google Generative Language API, **not** an official ChatGPT or Gemini product, and **not** suitable for bypassing provider terms of use. Run it only for personal or permitted automation on accounts you control.
+**This is not** the official OpenAI, Google Generative Language, or xAI API, **not** an official ChatGPT, Gemini, or Grok product, and **not** suitable for bypassing provider terms of use. Run it only for personal or permitted automation on accounts you control.
 
 ---
 
@@ -53,7 +53,7 @@ sequenceDiagram
   participant App as Your app (OpenAI SDK)
   participant Relay as BridgeGPT relay (Node)
   participant Ext as Browser extension
-  participant Web as chatgpt.com / chat.openai.com or gemini.google.com
+  participant Web as chatgpt.com / chat.openai.com, gemini.google.com, or grok.com
 
   App->>Relay: POST /v1/chat/completions or /v1beta/...:generateContent
   Relay->>Ext: Socket.IO serverMessage
@@ -64,19 +64,19 @@ sequenceDiagram
 ```
 
 1. The relay accepts HTTP requests authenticated with **`api_key`**: the same secret the extension shows in Settings (internally the server maps it to your browser’s Socket.IO session).
-2. The extension opens or reuses a **chatgpt.com** / **chat.openai.com** and/or **gemini.google.com** tab (depending on the route and headers), injects the user message, and captures the assistant text from the page.
+2. The extension opens or reuses a **chatgpt.com** / **chat.openai.com**, **gemini.google.com**, and/or **grok.com** tab (depending on the route and headers), injects the user message, and captures the assistant text from the page.
 3. The relay wraps that text as **`chat.completion`** / **`chat.completion.chunk`** or a **Gemini `generateContent`-style** JSON body.
 
 ---
 
 ## Features
 
-- **OpenAI-compatible** — `POST /v1/chat/completions`, `GET /v1/models`, optional **SSE streaming** (simulated chunks after the full reply is captured). Use header **`X-Bridge-Provider: gemini`** to target **gemini.google.com** instead of ChatGPT for the same route.
+- **OpenAI-compatible** — `POST /v1/chat/completions`, `GET /v1/models`, optional **SSE streaming** (simulated chunks after the full reply is captured). Use header **`X-Bridge-Provider: gemini`** to target **gemini.google.com**, or **`X-Bridge-Provider: grok`** to target **grok.com**, instead of ChatGPT for the same route.
 - **Gemini API–shaped routes** — `GET /v1beta/models`, `POST /v1beta/models/<id>:generateContent` (and `:streamGenerateContent`), same **Bearer `api_key`** as other relay routes. Responses are a **minimal subset** of the real Google API (text + usage estimates); thread context stays in the browser tab.
 - **Self-hosted relay** — Express + Socket.IO; default port **3456**.
 - **Configurable extension** — Build-time **`VITE_API_BASE_URL`** points the extension at your relay (must end with `/`).
 - **Keep-alive option** — Extension can periodically retry the WebSocket if disconnected (see Settings).
-- **Relay home** — `GET /` shows a welcome page without `api_key`. With `?api_key=<your key from Settings>` you get an in-browser chat UI (OpenAI or Gemini backend; use **`&backend=gemini`** for Gemini). Optional `&message=…` pre-sends the first user turn. `?format=json` (or `Accept: application/json`) returns machine-readable status and a sample `chatUrl`.
+- **Relay home** — `GET /` shows a welcome page without `api_key`. With `?api_key=<your key from Settings>` you get an in-browser chat UI (OpenAI, Gemini, or Grok backend; use **`&backend=gemini`** or **`&backend=grok`**). Optional `&message=…` pre-sends the first user turn. `?format=json` (or `Accept: application/json`) returns machine-readable status and a sample `chatUrl`.
 
 ---
 
@@ -89,6 +89,7 @@ sequenceDiagram
 | Browser | **Chrome** or **Firefox** (Manifest V3) |
 | ChatGPT | For ChatGPT API routes: active **web** session on **https://chatgpt.com** or **https://chat.openai.com** (both are matched by the extension; other hostnames such as **www** only work if you add them to `extension/manifest.json`) |
 | Gemini | For Gemini routes or `X-Bridge-Provider: gemini`: active session on **https://gemini.google.com** |
+| Grok | For `X-Bridge-Provider: grok` on `/v1/chat/completions` or relay UI `backend=grok`: active session on **https://grok.com** |
 
 ---
 
@@ -137,7 +138,7 @@ Then open **chrome://extensions** → enable **Developer mode** → **Load unpac
 
 1. Open the extension **Settings** (or the page opened on first install).
 2. Click **Connect** so the extension joins the relay over WebSocket.
-3. Keep **chatgpt.com** / **chat.openai.com** and/or **gemini.google.com** signed in (whichever backends you use); the extension reuses matching tabs when possible.
+3. Keep **chatgpt.com** / **chat.openai.com**, **gemini.google.com**, and/or **grok.com** signed in (whichever backends you use); the extension reuses matching tabs when possible.
 4. Copy **`base_url`** (`…/v1`) and **`api_key`** (e.g. `sk-bridgegpt-…`) from the settings panel.
 
 ### 5. Call the API (Python example)
@@ -181,6 +182,20 @@ curl -sS http://127.0.0.1:3456/v1/chat/completions \
   -d '{"model":"gpt-5","messages":[{"role":"user","content":"Say hi in one sentence."}],"stream":false}'
 ```
 
+### Grok path (`curl`, OpenAI-compatible route)
+
+Same **`api_key`** as ChatGPT; add **`X-Bridge-Provider: grok`** and keep a **grok.com** tab available.
+
+```bash
+curl -sS http://127.0.0.1:3456/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-Bridge-Provider: grok" \
+  -d '{"model":"grok-3","messages":[{"role":"user","content":"Say hi in one sentence."}],"stream":false}'
+```
+
+Model names such as **`grok-3`** are **placeholders**; the live session follows whatever you use on **grok.com**.
+
 ### Gemini path (`curl`)
 
 Uses the same **`api_key`**; ensure a **gemini.google.com** tab is available (extension may open one on first use).
@@ -196,7 +211,7 @@ Model IDs such as **`gemini-3.1-flash`** are **placeholders** for clients; the a
 
 ### Relay web UI
 
-Open `http://127.0.0.1:3456/?api_key=YOUR_API_KEY` in a browser. Use the on-page controls to pick **OpenAI (ChatGPT)** vs **Gemini** backend and send messages; this exercises the same HTTP stack as `curl` without extra tools.
+Open `http://127.0.0.1:3456/?api_key=YOUR_API_KEY` in a browser. Use the on-page controls to pick **OpenAI (ChatGPT)**, **Gemini**, or **Grok** backend and send messages; this exercises the same HTTP stack as `curl` without extra tools.
 
 ---
 
@@ -210,7 +225,7 @@ To run the relay on your own host (VPS, homelab, etc.):
 2. **Build** — `npm run build:server` produces `server/dist/`.
 3. **Run** — `npm run start -w @bridgegpt/server` (or `node server/dist/index.js` from a process manager). Set **`PORT`** (default `3456`) and optionally **`RELAY_REQUEST_TIMEOUT_MS`**.
 4. **HTTPS** — Put **Caddy**, **nginx**, or another reverse proxy in front with TLS when clients are not on localhost; enable **WebSocket** pass-through for Socket.IO.
-5. **Extension** — Build the extension with **`VITE_API_BASE_URL`** set to your public relay URL (trailing `/`), then install that build in the browser that stays logged in to **ChatGPT (chatgpt.com or chat.openai.com) and/or Gemini** (web), as you use them.
+5. **Extension** — Build the extension with **`VITE_API_BASE_URL`** set to your public relay URL (trailing `/`), then install that build in the browser that stays logged in to **ChatGPT (chatgpt.com or chat.openai.com), Gemini, and/or Grok** (web), as you use them.
 
 See [Production](#production) and [Security](#security) for hardening notes. For a complete production checklist, use **[docs/SERVER_DEPLOY.md](docs/SERVER_DEPLOY.md)**.
 
@@ -256,11 +271,11 @@ Legacy routes under **`/app/<api_key>/v1/...`** embed the same value in the path
 | GET | `/connect/:api_key?socketId=...` | No | Called by the extension after Socket.IO connect; path segment is the same **api_key** as for HTTP |
 | GET | `/v1/models` | Bearer / API key | Lists `gpt-5` / `gpt-5-mini` (labels only; the web UI picks the real model) |
 | GET | `/v1/models/:modelId` | Bearer / API key | Model metadata |
-| POST | `/v1/chat/completions` | Bearer / API key | Chat completions; body may include `"stream": true` for SSE. Optional header **`X-Bridge-Provider: gemini`** routes to **gemini.google.com** (default: ChatGPT). |
+| POST | `/v1/chat/completions` | Bearer / API key | Chat completions; body may include `"stream": true` for SSE. Optional header **`X-Bridge-Provider: gemini`** routes to **gemini.google.com**; **`X-Bridge-Provider: grok`** routes to **grok.com** (default: ChatGPT). |
 | GET | `/v1beta/models` | Bearer / API key | Lists Gemini-style model names (placeholders for routing; web UI picks the real model). |
 | GET | `/v1beta/models/:modelId` | Bearer / API key | Model metadata |
 | POST | `/v1beta/models/:resource` | Bearer / API key | `:resource` is e.g. **`gemini-3.1-flash:generateContent`** or **`:streamGenerateContent`** — body in **Google Generative Language** style (`contents`, etc.). |
-| GET | `/` | Query `api_key` or Bearer | Without key: welcome HTML. With key: browser chat UI; optional **`backend=gemini`**; optional `message` = first user turn. JSON if `format=json` or `Accept: application/json` |
+| GET | `/` | Query `api_key` or Bearer | Without key: welcome HTML. With key: browser chat UI; optional **`backend=gemini`** or **`backend=grok`**; optional `message` = first user turn. JSON if `format=json` or `Accept: application/json` |
 | * | `/app/:api_key/v1/...` | Path **api_key** | Same as `/v1/...` for older clients |
 | * | `/app/:api_key/v1beta/...` | Path **api_key** | Same as `/v1beta/...` with key in path |
 
@@ -308,17 +323,17 @@ npm run start -w @bridgegpt/server
 
 - Traffic includes **prompts and model output**; treat the relay host and **api_key** as **sensitive**.
 - Do **not** commit real **api_key** values, tokens, or production URLs into public repositories.
-- Harden the machine running the browser extension (anyone with API access can drive your ChatGPT tab subject to site UI).
+- Harden the machine running the browser extension (anyone with API access can drive your ChatGPT / Gemini / Grok tabs subject to site UI).
 
 ---
 
 ## Limitations
 
-- Depends on **ChatGPT and/or Gemini web UI** DOM and behavior; site updates can break the extension until it is updated.
+- Depends on **ChatGPT, Gemini, and/or Grok web UI** DOM and behavior; site updates can break the extension until it is updated.
 - **No true token-by-token** streaming from the web UI; streaming is **simulated** after the full reply is captured.
 - **Model names** in the API are mostly **labels**; the effective model is whatever the open web session uses.
 - **Multi-turn** behavior follows the open browser tab (conversation history is not reconstructed from HTTP bodies alone for the web UIs).
-- Using this stack must comply with **OpenAI / Google** provider terms and applicable law.
+- Using this stack must comply with **OpenAI / Google / xAI** provider terms and applicable law.
 
 ---
 
@@ -328,10 +343,11 @@ npm run start -w @bridgegpt/server
 |---------|------------------|
 | Extension **Disconnected** | Relay running? Correct `VITE_API_BASE_URL`? Firewall / HTTPS mismatch? Try **Connect** again; enable **Keep alive** in settings if you want auto-retry. |
 | HTTP **503** “No extension connected” | Extension not connected or **api_key** mismatch. Open Settings and confirm **Connect** and that the client uses the same **api_key**. |
-| HTTP **504** / timeout | Target tab closed, slow, or still loading; increase `RELAY_REQUEST_TIMEOUT_MS`; keep **chatgpt.com** / **chat.openai.com** or **gemini.google.com** focused enough to finish rendering. |
+| HTTP **504** / timeout | Target tab closed, slow, or still loading; increase `RELAY_REQUEST_TIMEOUT_MS`; keep **chatgpt.com** / **chat.openai.com**, **gemini.google.com**, or **grok.com** focused enough to finish rendering. |
 | New tab on every request after **extension reload** | Service worker restarted; in-memory tab mapping is lost. Chrome should re-inject content scripts—if `tabs.sendMessage` fails once, the extension may open a **new** tab. Refresh the existing provider tab or send a second request after reload. |
 | Empty or wrong replies (ChatGPT) | UI selectors may need an update after a site redesign; check the browser console on the ChatGPT tab. |
 | Empty, stale, or wrong replies (Gemini) | Ensure **gemini.google.com** is logged in; multi-turn answers are matched to the prompt sent for that request—see extension `gemini-page` logic if the UI changes. |
+| Empty or wrong replies (Grok) | Ensure **grok.com** is logged in; DOM selectors may need updates after site changes—see extension `grok-page` and `GrokWebProvider`. |
 | CORS from a web app | Relay enables permissive CORS for API use; for cookie-based browsers, prefer **server-side** calls to the relay. |
 
 ---
@@ -343,7 +359,7 @@ bridgegpt/
 ├── docs/                      # e.g. [SERVER_DEPLOY.md](docs/SERVER_DEPLOY.md)
 ├── extension/                 # Vite + CRXJS (Chrome / Firefox)
 │   ├── src/pages/background/  # Service worker, Socket.IO client
-│   ├── src/pages/content/     # index.tsx (content script); chatgpt-page / gemini-page (page world) + webProviders/chatgptWeb|geminiWeb
+│   ├── src/pages/content/     # index.tsx (content script); chatgpt-page / gemini-page / grok-page (page world) + webProviders/chatgptWeb|geminiWeb|grokWeb
 │   ├── src/pages/settings/    # Settings UI (connect, API URL, keep-alive)
 │   ├── manifest.json
 │   └── package.json           # workspace: bridgegpt-extension

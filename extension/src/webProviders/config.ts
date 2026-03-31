@@ -2,7 +2,7 @@
  * Supported web UIs the extension can drive. Add new entries here and implement
  * the matching content script + (optional) page-world script.
  */
-export type WebProviderId = "chatgpt" | "gemini";
+export type WebProviderId = "chatgpt" | "gemini" | "grok";
 
 export type WebProviderConfig = {
   id: WebProviderId;
@@ -43,6 +43,14 @@ export const WEB_PROVIDERS: Record<WebProviderId, WebProviderConfig> = {
     startUrl: "https://gemini.google.com/",
     sessionTabKey: "bridgegptTab_gemini",
   },
+  grok: {
+    id: "grok",
+    label: "Grok",
+    urlPrefixes: ["https://grok.com/", "https://www.grok.com/"],
+    tabsQueryPatterns: ["https://grok.com/*", "https://www.grok.com/*"],
+    startUrl: "https://grok.com/",
+    sessionTabKey: "bridgegptTab_grok",
+  },
 };
 
 export function normalizeWebProviderId(raw: unknown): WebProviderId {
@@ -50,6 +58,7 @@ export function normalizeWebProviderId(raw: unknown): WebProviderId {
     .trim()
     .toLowerCase();
   if (s === "gemini") return "gemini";
+  if (s === "grok") return "grok";
   return "chatgpt";
 }
 

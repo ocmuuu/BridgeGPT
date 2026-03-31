@@ -40,19 +40,35 @@ function ssSet(k: string, v: string): void {
   }
 }
 
-function pickInitialBackend(boot: RelayChatBoot): "openai" | "gemini" {
+function pickInitialBackend(
+  boot: RelayChatBoot
+): "openai" | "gemini" | "grok" {
   const fromSs = ssGet(SS_BACKEND);
-  if (fromSs === "gemini" || fromSs === "openai") return fromSs;
-  return boot.backend === "gemini" ? "gemini" : "openai";
+  if (fromSs === "gemini" || fromSs === "openai" || fromSs === "grok") {
+    return fromSs;
+  }
+  if (boot.backend === "gemini") return "gemini";
+  if (boot.backend === "grok") return "grok";
+  return "openai";
 }
 
 /** Default model from boot config for the active backend (no UI picker). */
 function defaultModelForBackend(
-  backend: "openai" | "gemini",
+  backend: "openai" | "gemini" | "grok",
   boot: RelayChatBoot
 ): string {
-  const list = backend === "openai" ? boot.openaiModels : boot.geminiModels;
-  const def = backend === "openai" ? boot.model : boot.geminiModel;
+  const list =
+    backend === "openai"
+      ? boot.openaiModels
+      : backend === "gemini"
+        ? boot.geminiModels
+        : boot.grokModels;
+  const def =
+    backend === "openai"
+      ? boot.model
+      : backend === "gemini"
+        ? boot.geminiModel
+        : boot.grokModel;
   if (def && list.includes(def)) return def;
   return list[0]!;
 }
@@ -101,7 +117,7 @@ function messagesToTurns(messages: ChatMessage[]): StoredTurn[] {
 
 function turnsToChatMessages(
   turns: StoredTurn[],
-  fallback: { backend: "openai" | "gemini"; model: string }
+  fallback: { backend: "openai" | "gemini" | "grok"; model: string }
 ): ChatMessage[] {
   return turns.map((t) => {
     if (t.role === "user") {
@@ -244,7 +260,7 @@ export default function App({ boot }: Props) {
     return () => window.clearTimeout(t);
   }, [hasApiKey, messages, activeConversationId, backend, model]);
 
-  const onBackendChange = (b: "openai" | "gemini") => {
+  const onBackendChange = (b: "openai" | "gemini" | "grok") => {
     setBackend(b);
     ssSet(SS_BACKEND, b);
     setModel(defaultModelForBackend(b, boot));
@@ -357,12 +373,16 @@ export default function App({ boot }: Props) {
           }),
         });
       } else {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${key}`,
+        };
+        if (backend === "grok") {
+          headers["X-Bridge-Provider"] = "grok";
+        }
         res = await fetch("/v1/chat/completions", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${key}`,
-          },
+          headers,
           body: JSON.stringify({
             model,
             messages: [{ role: "user", content: t }],

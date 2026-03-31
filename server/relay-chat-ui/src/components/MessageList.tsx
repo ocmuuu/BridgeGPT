@@ -10,10 +10,10 @@ export type ChatMessage = {
   /** Assistant only: stream not finished → render plain text */
   streaming?: boolean;
   /** Assistant: backend & model used for this reply */
-  sourceBackend?: "openai" | "gemini";
+  sourceBackend?: "openai" | "gemini" | "grok";
   sourceModel?: string;
   /** User: backend & model selected when this message was sent (persisted on the turn). */
-  composerBackend?: "openai" | "gemini";
+  composerBackend?: "openai" | "gemini" | "grok";
   composerModel?: string;
 };
 
@@ -32,11 +32,15 @@ export function MessageList({
   const endRef = useRef<HTMLDivElement>(null);
 
   function assistantSourceLabel(
-    backend: "openai" | "gemini",
+    backend: "openai" | "gemini" | "grok",
     model: string
   ): string {
     const platform =
-      backend === "openai" ? t.platformOpenAI : t.platformGemini;
+      backend === "openai"
+        ? t.platformOpenAI
+        : backend === "gemini"
+          ? t.platformGemini
+          : t.platformGrok;
     const m = model.trim();
     return m ? `${platform} · ${m}` : platform;
   }

@@ -27,6 +27,10 @@
     {
       "resources": ["gemini-page.js"],
       "matches": ["https://gemini.google.com/*"]
+    },
+    {
+      "resources": ["grok-page.js"],
+      "matches": ["https://grok.com/*", "https://*.grok.com/*"]
     }
   ]
 }

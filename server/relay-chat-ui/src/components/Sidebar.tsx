@@ -10,8 +10,8 @@ type Props = {
   boot: RelayChatBoot;
   hasApiKey: boolean;
   fromUrlKey: boolean;
-  backend: "openai" | "gemini";
-  onBackendChange: (b: "openai" | "gemini") => void;
+  backend: "openai" | "gemini" | "grok";
+  onBackendChange: (b: "openai" | "gemini" | "grok") => void;
   onNewChat: () => void | Promise<void>;
   busy: boolean;
   sessions: StoredConversation[];
@@ -150,11 +150,12 @@ export function Sidebar({
           value={backend}
           disabled={!hasApiKey || busy}
           onChange={(e) =>
-            onBackendChange(e.target.value as "openai" | "gemini")
+            onBackendChange(e.target.value as "openai" | "gemini" | "grok")
           }
         >
           <option value="openai">{t.backendOpenAI}</option>
           <option value="gemini">{t.backendGemini}</option>
+          <option value="grok">{t.backendGrok}</option>
         </select>
       </div>
 

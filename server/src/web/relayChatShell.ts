@@ -20,10 +20,12 @@ export type RelayChatBoot = {
   initialUserMessage: string;
   /** OpenAI-compat chat model when backend is openai */
   model: string;
-  /** openai → /v1/chat/completions; gemini → /v1beta/models/…:streamGenerateContent */
-  backend: "openai" | "gemini";
+  /** openai / grok → /v1/chat/completions; gemini → /v1beta/models/…:streamGenerateContent */
+  backend: "openai" | "gemini" | "grok";
   /** Path segment for Gemini (label only; real model is the site UI) */
   geminiModel: string;
+  /** Placeholder when backend is grok (real model is the grok.com session). */
+  grokModel: string;
 };
 
 export function relayChatShellHtml(boot: RelayChatBoot): string {
@@ -37,6 +39,7 @@ export function relayChatShellHtml(boot: RelayChatBoot): string {
       "gemini-3.1-pro",
       "gemini-3.1",
     ],
+    grokModels: ["grok-3", "grok-3-mini"],
     ...boot,
     logoUrl: RELAY_LOGO_URL,
   };

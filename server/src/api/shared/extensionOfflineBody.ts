@@ -4,7 +4,7 @@
 export const EXTENSION_OFFLINE_MESSAGE =
   "BridgeGPT Chrome extension is not connected for this api_key on this relay. " +
   "Open the extension → Settings: confirm relay server URL, click Connect, and keep a signed-in " +
-  "https://chatgpt.com or https://gemini.google.com tab open (match your API: OpenAI vs Gemini). " +
+  "https://chatgpt.com, https://gemini.google.com, or https://grok.com tab open (match your API / X-Bridge-Provider). " +
   "If you regenerated api_key, update web chat / your client. Check the extension icon and Settings for connection status.";
 
 export function openAiStyleExtensionOfflineJson(): Record<string, unknown> {

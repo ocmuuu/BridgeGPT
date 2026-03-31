@@ -62,18 +62,27 @@ export function handleRelayHome(
       : typeof req.query.provider === "string"
         ? req.query.provider.trim().toLowerCase()
         : "";
-  const backend: "openai" | "gemini" =
-    backendRaw === "gemini" ? "gemini" : "openai";
+  const backend: "openai" | "gemini" | "grok" =
+    backendRaw === "gemini"
+      ? "gemini"
+      : backendRaw === "grok"
+        ? "grok"
+        : "openai";
   const geminiModel =
     typeof req.query.gemini_model === "string" && req.query.gemini_model.trim()
       ? req.query.gemini_model.trim()
       : "gemini-3.1-flash";
+  const grokModel =
+    typeof req.query.grok_model === "string" && req.query.grok_model.trim()
+      ? req.query.grok_model.trim()
+      : "grok-3";
 
   const shell = relayChatShellHtml({
     initialUserMessage: message,
     model,
     backend,
     geminiModel,
+    grokModel,
   });
 
   if (!roomId) {
@@ -104,10 +113,10 @@ export function handleRelayHome(
       ok: true,
       roomId,
       steps: [
-        "Extension: Settings → Connect; keep chatgpt.com and/or gemini.google.com open as needed.",
-        "OpenAI SDK: base_url = …/v1, api_key = this roomId.",
+        "Extension: Settings → Connect; keep chatgpt.com, gemini.google.com, and/or grok.com open as needed.",
+        "OpenAI SDK: base_url = …/v1, api_key = this roomId; optional header X-Bridge-Provider: gemini|grok.",
         "Gemini API: same host, paths under /v1beta/models/… (see repo docs).",
-        "Browser chat: Settings → Open web chat, or open chatUrl; add ?backend=gemini for Gemini UI.",
+        "Browser chat: Settings → Open web chat, or open chatUrl; add ?backend=gemini or ?backend=grok.",
       ],
       chatUrl,
     });

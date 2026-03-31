@@ -5,6 +5,9 @@ import { WEB_PROVIDERS } from "../../../webProviders/config";
 export const RELAY_THREAD_MAX_USER_TURNS = 8;
 
 export function countUserTurnsInThread(provider: WebProviderId): number {
+  if (provider === "grok") {
+    return 0;
+  }
   if (provider === "gemini") {
     return document.querySelectorAll("div.conversation-container").length;
   }
