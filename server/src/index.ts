@@ -10,6 +10,7 @@ import {
   registerExtensionConnectRoute,
 } from "./socket/extensionRelay.js";
 import { SERVER_PUBLIC_DIR } from "./serverPublicPath.js";
+import { registerExtensionProviderPhaseConfigRoute } from "./extensionProviderPhaseConfig.js";
 import { registerVersionRoute } from "./relayVersion.js";
 
 const PORT = Number(process.env.PORT) || 3456;
@@ -23,6 +24,7 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 registerVersionRoute(app);
+registerExtensionProviderPhaseConfigRoute(app);
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {

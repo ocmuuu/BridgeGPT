@@ -83,25 +83,30 @@ export function VersionSection() {
           >
             Extension version
           </h2>
-          <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-            <span className="font-medium text-slate-700 dark:text-slate-300">
-              Toolbar <span className="font-mono rounded bg-slate-200/80 px-1 py-px dark:bg-slate-700">!</span>{" "}
-              badge
-            </span>{" "}
-            and the{" "}
-            <span className="font-medium text-slate-700 dark:text-slate-300">
-              amber dot
-            </span>{" "}
-            next to{" "}
-            <span className="font-medium text-slate-700 dark:text-slate-300">
-              Open settings
-            </span>{" "}
-            in the popup both mean: your relay reports a{" "}
-            <strong>newer</strong> extension than this install.{" "}
-            <span className="text-slate-700 dark:text-slate-300">
-              This block is where that is explained.
-            </span>
-          </p>
+          {highlight ? (
+            <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                Toolbar{" "}
+                <span className="font-mono rounded bg-slate-200/80 px-1 py-px dark:bg-slate-700">
+                  !
+                </span>{" "}
+                badge
+              </span>{" "}
+              and the{" "}
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                amber dot
+              </span>{" "}
+              next to{" "}
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                Open settings
+              </span>{" "}
+              in the popup both mean: your relay reports a{" "}
+              <strong>newer</strong> extension than this install.{" "}
+              <span className="text-slate-700 dark:text-slate-300">
+                This block is where that is explained.
+              </span>
+            </p>
+          ) : null}
         </div>
       </div>
 

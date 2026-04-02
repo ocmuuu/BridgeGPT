@@ -1,9 +1,16 @@
 /**
- * Page-world script for chatgpt.com: intercepts fetch/SSE and forwards assistant text.
- * Paired with `gemini-page.ts` on gemini.google.com. Injected as `chatgpt-page.js`.
- * Content script: `webProviders/chatgptWeb/ChatgptWebProvider.tsx`.
+ * Page-world script for chatgpt.com:
+ * - Intercepts fetch/SSE and forwards assistant text when a stream completes.
+ * - Fills the composer and submits via `runAsk` (same phase model as Gemini/Grok),
+ *   triggered by `postMessage` from the content script. See `ChatgptWebProvider.tsx`.
+ *
+ * @see `./shared/providerPhaseModel.ts` — canonical Receive → … → Emit phase list.
  */
 (function () {
+  const SRC_PAGE = "bridgegpt-chatgpt-page";
+  const SRC_CONTENT = "bridgegpt-content-script";
+  const MSG_IN = "bridgegpt_chatgpt_run";
+
   const originalFetch = window.fetch;
 
   const MAX_SSE_SAMPLES = 48;
@@ -114,7 +121,7 @@
 
       const payload = {
         version: 1 as const,
-        source: "bridgegpt-chatgpt-page",
+        source: SRC_PAGE,
         assistantText,
         page: {
           href: typeof location !== "undefined" ? location.href : "",
@@ -134,4 +141,74 @@
     readStream().catch((err) => console.error("SSE read error:", err));
     return response;
   };
+
+  function postRunAskFailure(
+    reason: string,
+    startedAt: string
+  ): void {
+    window.postMessage(
+      {
+        data: {
+          version: 1,
+          source: SRC_PAGE,
+          assistantText: "",
+          page: {
+            href: typeof location !== "undefined" ? location.href : "",
+            title: typeof document !== "undefined" ? document.title : "",
+          },
+          capture: {
+            startedAt,
+            completedAt: new Date().toISOString(),
+            ok: false,
+            reason,
+          },
+        },
+      },
+      "*"
+    );
+  }
+
+  /** Phase: resolve composer → fill → submit (capture phase is SSE hook above). */
+  function runAsk(text: string): void {
+    const startedAt = new Date().toISOString();
+    const inputElement = document.querySelector(
+      '[name="prompt-textarea"]'
+    ) as HTMLInputElement | null;
+    const contentArea = document.querySelector(
+      "#prompt-textarea"
+    ) as HTMLDivElement | null;
+    if (!inputElement || !contentArea) {
+      postRunAskFailure("dom_not_ready", startedAt);
+      return;
+    }
+    const trimmed = typeof text === "string" ? text.trim() : "";
+    if (!trimmed) {
+      postRunAskFailure("missing_prompt", startedAt);
+      return;
+    }
+    contentArea.innerHTML = trimmed;
+    inputElement.value = trimmed;
+    window.setTimeout(() => {
+      const submitButton = document.querySelector(
+        "#composer-submit-button"
+      ) as HTMLButtonElement | null;
+      if (!submitButton) {
+        postRunAskFailure("no_submit_button", startedAt);
+        return;
+      }
+      submitButton.click();
+    }, 100);
+  }
+
+  window.addEventListener("message", (e: MessageEvent) => {
+    if (e.source !== window) return;
+    const d = e.data as {
+      source?: string;
+      type?: string;
+      text?: string;
+    } | null;
+    if (!d || d.source !== SRC_CONTENT || d.type !== MSG_IN) return;
+    const t = typeof d.text === "string" ? d.text : "";
+    runAsk(t);
+  });
 })();

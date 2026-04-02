@@ -5,15 +5,24 @@ import type {
   QuestionAnswerPayload,
 } from "../../shared/relayTypes";
 
+/**
+ * Content side of ChatGPT: Receive (`ask_question` + relay ref) → postMessage → page
+ * runs Resolve/Fill/Submit + SSE Wait/capture → Emit via `postMessage` back.
+ *
+ * @see `../../shared/providerPhaseModel.ts` — phase definitions.
+ */
 export type { QuestionAnswerPayload };
 
-/** Page script `chatgpt-page.js` sets this on captured payloads (see `chatgpt-page.ts`). */
+/** Must match `chatgpt-page.ts` (page world). */
 const PAGE_SCRIPT_SOURCE = "bridgegpt-chatgpt-page";
+const CONTENT_SOURCE = "bridgegpt-content-script";
+const RUN_TYPE = "bridgegpt_chatgpt_run";
 
 export const ChatgptWebProvider = () => {
   console.log("[BridgeGPT] ChatGPT provider loaded");
 
   const lastRelayRef = useRef<{ route: string; body: unknown } | null>(null);
+  const pageScriptReadyRef = useRef(false);
 
   const runLastScript = (payload: unknown) => {
     if (payload === null || payload === undefined) return;
@@ -74,32 +83,22 @@ export const ChatgptWebProvider = () => {
       if (msg.type !== "ask_question" || !msg.content) {
         return false;
       }
-      const c = msg.content;
-      lastRelayRef.current = { route: c.route, body: c.body };
-      const inputElement = document.querySelector(
-        '[name="prompt-textarea"]'
-      ) as HTMLInputElement;
-      const contentArea = document.querySelector(
-        "#prompt-textarea"
-      ) as HTMLDivElement;
-      if (!inputElement || !contentArea) {
-        sendResponse({ ok: false, reason: "dom_not_ready" });
+      if (!pageScriptReadyRef.current) {
+        sendResponse({ ok: false, reason: "chatgpt_page_script_not_ready" });
         return false;
       }
+      const c = msg.content;
+      lastRelayRef.current = { route: c.route, body: c.body };
       const text =
         typeof c.promptForChatgpt === "string" ? c.promptForChatgpt.trim() : "";
       if (!text) {
         sendResponse({ ok: false, reason: "missing_prompt_from_relay" });
         return false;
       }
-      contentArea.innerHTML = text;
-      inputElement.value = text;
-      window.setTimeout(() => {
-        const submitButton = document.querySelector(
-          "#composer-submit-button"
-        ) as HTMLButtonElement;
-        submitButton?.click();
-      }, 100);
+      window.postMessage(
+        { source: CONTENT_SOURCE, type: RUN_TYPE, text },
+        "*"
+      );
       sendResponse({ ok: true });
       return false;
     };
@@ -110,6 +109,7 @@ export const ChatgptWebProvider = () => {
     script.src = chrome.runtime.getURL("chatgpt-page.js");
     document.body.appendChild(script);
     script.onload = () => {
+      pageScriptReadyRef.current = true;
       window.addEventListener("message", onWindowMessage);
     };
 

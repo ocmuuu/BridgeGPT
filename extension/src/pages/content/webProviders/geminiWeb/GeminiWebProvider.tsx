@@ -8,6 +8,8 @@ import type {
 /**
  * Must match `gemini-page.ts` (page world). HTML→Markdown runs on the relay
  * (`server/src/api/web/geminiWebHtmlToMarkdown.ts`).
+ *
+ * @see `../../shared/providerPhaseModel.ts` — phase definitions.
  */
 const CONTENT_SOURCE = "bridgegpt-content-script";
 const RUN_TYPE = "bridgegpt_gemini_run";

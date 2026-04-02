@@ -5,6 +5,9 @@ import type {
   QuestionAnswerPayload,
 } from "../../shared/relayTypes";
 
+/**
+ * @see `../../shared/providerPhaseModel.ts` — phase definitions.
+ */
 const CONTENT_SOURCE = "bridgegpt-content-script";
 const RUN_TYPE = "bridgegpt_grok_run";
 

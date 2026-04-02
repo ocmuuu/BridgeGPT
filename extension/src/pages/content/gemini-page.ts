@@ -5,6 +5,8 @@
  *
  * Sends `assistantHtml` (Gemini `.markdown` innerHTML) to the relay; HTML→Markdown
  * runs on the server (`server/src/api/web/geminiWebHtmlToMarkdown.ts`).
+ *
+ * @see `./shared/providerPhaseModel.ts` — canonical Receive → … → Emit phase list.
  */
 (function () {
   const SRC_PAGE = "bridgegpt-gemini-page";

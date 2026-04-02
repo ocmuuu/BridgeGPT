@@ -5,6 +5,8 @@
  *
  * New tabs often use Tiptap (ProseMirror) in `main form` with the real submit
  * control hidden/disabled — use Mod+Enter to send. DOM may change on site updates.
+ *
+ * @see `./shared/providerPhaseModel.ts` — canonical Receive → … → Emit phase list.
  */
 (function () {
   const SRC_PAGE = "bridgegpt-grok-page";
