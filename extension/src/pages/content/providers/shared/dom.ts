@@ -1,8 +1,8 @@
 /**
  * Reference copy of `sleep` / `waitFor` for DOM-poll providers.
- * Gemini/Grok **page-world** bundles inline these in `domHelpers.ts` so
- * `gemini-page.js` / `grok-page.js` stay single classic scripts (injected without
- * `type="module"`); do not import this file from those entry graphs.
+ * ChatGPT/Gemini/Grok **page-world** bundles inline these in `domHelpers.ts` so
+ * `*-page.js` scripts stay single classic bundles (injected without `type="module"`);
+ * do not import this file from those entry graphs.
  */
 
 export function sleep(ms: number): Promise<void> {

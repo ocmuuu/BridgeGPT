@@ -36,8 +36,8 @@
  *    or Mod+Enter (Grok). **Site-specific**.
  *
  * 5. **Wait / capture** — Decide when “this turn’s reply” is ready:
- *    - **ChatGPT**: `fetch` wrapper reads **SSE** until the stream ends; parses
- *      `delta` patches (no DOM polling for the answer body).
+ *    - **ChatGPT**: `fetch` wrapper in `providers/chatgpt/capture.ts` reads **SSE**
+ *      until the stream ends; parses `delta` patches (no DOM polling for the answer body).
  *    - **Gemini / Grok**: **poll DOM** + stable ticks + per-site idle / boilerplate
  *      / preview heuristics.
  *    **Mostly site-specific**; ChatGPT uses a different **strategy** (SSE) than

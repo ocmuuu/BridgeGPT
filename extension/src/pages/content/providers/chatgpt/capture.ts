@@ -1,11 +1,11 @@
-import { CHATGPT_SRC_PAGE } from "./constants";
+import { chatgptPostToContent } from "./emit";
 
 const MAX_SSE_SAMPLES = 48;
 const MAX_DATA_LEN = 2000;
 
 /**
- * Phase: wait_capture + emit (success path) for ChatGPT — `fetch` SSE read completes
- * then postMessages assistant text to content.
+ * Phase: wait_capture — ChatGPT wraps `fetch`, reads SSE until the stream ends,
+ * then emit via `chatgptPostToContent` (success path).
  */
 export function installChatgptSseFetchCapture(): void {
   const originalFetch = window.fetch;
@@ -112,9 +112,7 @@ export function installChatgptSseFetchCapture(): void {
 
       const assistantText = fullAssistantMessage.trim();
 
-      const payload = {
-        version: 1 as const,
-        source: CHATGPT_SRC_PAGE,
+      chatgptPostToContent({
         assistantText,
         page: {
           href: typeof location !== "undefined" ? location.href : "",
@@ -127,9 +125,7 @@ export function installChatgptSseFetchCapture(): void {
           sseSamples,
           streamSignals: streamSignals.slice(-12),
         },
-      };
-
-      window.postMessage({ data: payload }, "*");
+      });
     }
     readStream().catch((err) => console.error("SSE read error:", err));
     return response;

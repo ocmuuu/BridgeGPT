@@ -1,11 +1,11 @@
 import { fillChatgptComposer } from "./fill";
 import { scheduleSubmitChatgpt } from "./submit";
-import { postChatgptRunAskFailure } from "./emitFailure";
+import { postChatgptRunAskFailure } from "./emit";
 import { resolveChatgptComposer } from "./resolveComposer";
 
 /**
  * Phases: resolve_composer → fill → submit.
- * wait_capture = SSE in `waitCaptureSse.ts`; emit success there.
+ * wait_capture = SSE in `capture.ts`; emit success via `emit.ts` there.
  */
 export function runChatgptAsk(text: string): void {
   const startedAt = new Date().toISOString();

@@ -60,7 +60,7 @@ function buildExecutionProfile() {
 
   const chatResolve = readRaw("chatgpt/resolveComposer.ts");
   const chatSubmit = readRaw("chatgpt/submit.ts");
-  const chatSse = readRaw("chatgpt/waitCaptureSse.ts");
+  const chatCapture = readRaw("chatgpt/capture.ts");
 
   const gemRun = readRaw("gemini/runAsk.ts");
   const gemResolve = readRaw("gemini/resolveComposer.ts");
@@ -110,8 +110,8 @@ function buildExecutionProfile() {
         wait_capture: {
           trigger: "fetch_response_content_type_includes",
           contentTypeSubstring: "text/event-stream",
-          maxSseSamples: firstInt(chatSse, /MAX_SSE_SAMPLES\s*=\s*(\d+)/),
-          maxSampleDataLength: firstInt(chatSse, /MAX_DATA_LEN\s*=\s*(\d+)/),
+          maxSseSamples: firstInt(chatCapture, /MAX_SSE_SAMPLES\s*=\s*(\d+)/),
+          maxSampleDataLength: firstInt(chatCapture, /MAX_DATA_LEN\s*=\s*(\d+)/),
           deltaEvents: ["delta", "delta_encoding"],
           assistantAppendPatch: {
             op: "append",
@@ -266,8 +266,9 @@ const body = {
       submit: read("chatgpt/submit.ts"),
       /** Orchestrates resolve → fill → submit for one ask. */
       run_ask: read("chatgpt/runAsk.ts"),
-      wait_capture: read("chatgpt/waitCaptureSse.ts"),
-      emit_failure: read("chatgpt/emitFailure.ts"),
+      wait_capture: read("chatgpt/capture.ts"),
+      emit: read("chatgpt/emit.ts"),
+      dom_helpers: read("chatgpt/domHelpers.ts"),
       mount: read("chatgpt/mount.ts"),
     },
     gemini: {
