@@ -7,6 +7,7 @@ import {
   RELAY_SERVER_STORAGE_KEY,
   relayBaseFromStoredString,
 } from "@src/config";
+import { useSettingsUi } from "@src/i18n/SettingsUiContext";
 
 function parseRelayUrl(raw: string): string | null {
   const t = raw.trim();
@@ -22,6 +23,7 @@ function parseRelayUrl(raw: string): string | null {
 }
 
 export const RelayServerSection = () => {
+  const { t } = useSettingsUi();
   const [input, setInput] = useState(DEFAULT_RELAY_BASE_URL);
   const [savedHint, setSavedHint] = useState(false);
   const [error, setError] = useState("");
@@ -54,7 +56,7 @@ export const RelayServerSection = () => {
     setError("");
     const parsed = parseRelayUrl(input);
     if (input.trim() && !parsed) {
-      setError("Enter a valid http(s) URL (e.g. https://relay.example.com/).");
+      setError(t("relayErrUrl"));
       return;
     }
     if (!input.trim() || parsed === normalizeRelayBase(DEFAULT_RELAY_BASE_URL)) {
@@ -88,16 +90,15 @@ export const RelayServerSection = () => {
       <div className="flex items-center gap-3 mb-4">
         <Server className="text-slate-700 dark:text-slate-300" size={24} />
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-          Relay server URL
+          {t("relayTitle")}
         </h2>
       </div>
       <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 leading-relaxed">
-        WebSocket and HTTP requests use this base URL. Change it if you
-        self-host the relay.
+        {t("relayIntro")}
       </p>
 
       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-        Relay base URL
+        {t("relayLabel")}
       </label>
       <div className="flex flex-col sm:flex-row gap-3 mb-2">
         <input
@@ -115,7 +116,9 @@ export const RelayServerSection = () => {
           <button
             type="button"
             onClick={resetToDefault}
-            title={`Use official relay (${OFFICIAL_RELAY_BASE_URL.replace(/\/+$/, "")})`}
+            title={t("relayResetTitle", [
+              OFFICIAL_RELAY_BASE_URL.replace(/\/+$/, ""),
+            ])}
             className="px-3 py-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <RotateCcw size={18} />
@@ -125,12 +128,12 @@ export const RelayServerSection = () => {
             onClick={save}
             className="px-4 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-medium text-sm shadow-sm shadow-violet-600/20 dark:shadow-violet-900/40"
           >
-            {savedHint ? "Saved" : "Save"}
+            {savedHint ? t("relaySaved") : t("relaySave")}
           </button>
         </div>
       </div>
       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
-        Built-in / production default:{" "}
+        {t("relayBuiltIn")}{" "}
         <span className="font-mono text-slate-600 dark:text-slate-300 break-all">
           {OFFICIAL_RELAY_BASE_URL}
         </span>

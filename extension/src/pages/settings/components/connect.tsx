@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Wifi, WifiOff, Loader2, Check, Server, Zap } from "lucide-react";
 import clsx from "clsx";
+import { useSettingsUi } from "@src/i18n/SettingsUiContext";
 
 export const ConnectButton = ({ popup }: { popup?: boolean }) => {
+  const { t } = useSettingsUi();
   const [status, setStatus] = useState("disconnected"); // disconnected, pending, connected
   const [errorMessage, setErrorMessage] = useState("");
   const [networkSpeed, setNetworkSpeed] = useState({
@@ -64,7 +66,7 @@ export const ConnectButton = ({ popup }: { popup?: boolean }) => {
   }, []);
 
   const formatSpeed = (mbps: number) => {
-    if (mbps === 0) return "Calculating...";
+    if (mbps === 0) return t("fmtCalculating");
     if (mbps >= 1) return `${mbps.toFixed(1)} Mbps`;
     return `${(mbps * 1000).toFixed(0)} Kbps`;
   };
@@ -176,9 +178,9 @@ export const ConnectButton = ({ popup }: { popup?: boolean }) => {
                   : "text-slate-900 dark:text-slate-100"
               )}
             >
-              {status === "connected" && "Connected"}
-              {status === "pending" && "Connecting..."}
-              {status === "disconnected" && "Disconnected"}
+              {status === "connected" && t("statusConn")}
+              {status === "pending" && t("statusConnecting")}
+              {status === "disconnected" && t("statusDisc")}
             </h2>
             <p
               className={clsx(
@@ -186,12 +188,9 @@ export const ConnectButton = ({ popup }: { popup?: boolean }) => {
                 popup ? "text-xs leading-snug" : "text-sm"
               )}
             >
-              {status === "connected" &&
-                "Your BridgeGPT connection is active and ready"}
-              {status === "pending" &&
-                "Establishing connection to relay server"}
-              {status === "disconnected" &&
-                "Click connect to start using BridgeGPT"}
+              {status === "connected" && t("descConn")}
+              {status === "pending" && t("descConnecting")}
+              {status === "disconnected" && t("descDisc")}
             </p>
             {errorMessage && (
               <p className="text-red-600 text-sm">{errorMessage}</p>
@@ -215,19 +214,19 @@ export const ConnectButton = ({ popup }: { popup?: boolean }) => {
             {status === "connected" && (
               <>
                 <Wifi size={popup ? 16 : 18} />
-                <span>Disconnect</span>
+                <span>{t("btnDisconnect")}</span>
               </>
             )}
             {status === "pending" && (
               <>
                 <Loader2 className="animate-spin" size={popup ? 16 : 18} />
-                <span>Connecting...</span>
+                <span>{t("btnConnecting")}</span>
               </>
             )}
             {status === "disconnected" && (
               <>
                 <Wifi size={popup ? 16 : 18} />
-                <span>Connect</span>
+                <span>{t("btnConnect")}</span>
               </>
             )}
           </button>
@@ -244,10 +243,10 @@ export const ConnectButton = ({ popup }: { popup?: boolean }) => {
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        Status
+                        {t("detStatus")}
                       </p>
                       <p className="text-sm text-slate-900 dark:text-slate-100 font-semibold">
-                        Online
+                        {t("detOnline")}
                       </p>
                     </div>
                   </div>
@@ -258,7 +257,7 @@ export const ConnectButton = ({ popup }: { popup?: boolean }) => {
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        Server
+                        {t("detServer")}
                       </p>
                       <p className="text-sm text-slate-900 dark:text-slate-100 font-mono font-semibold">
                         {serverName}
@@ -279,7 +278,7 @@ export const ConnectButton = ({ popup }: { popup?: boolean }) => {
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        Network Speed
+                        {t("detNetSpeed")}
                       </p>
                       <p
                         className={`text-sm font-semibold ${getSpeedColor(

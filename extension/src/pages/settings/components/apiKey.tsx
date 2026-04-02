@@ -6,6 +6,7 @@ import {
   LEGACY_ROOM_ID_STORAGE_KEY,
   RELAY_SERVER_STORAGE_KEY,
 } from "@src/config";
+import { useSettingsUi } from "@src/i18n/SettingsUiContext";
 
 type OpenAIClientConfig = { v1BaseUrl: string; apiKey: string };
 
@@ -14,6 +15,7 @@ function defaultV1BaseUrl(): string {
 }
 
 export const ApiKeySection = () => {
+  const { t } = useSettingsUi();
   const [copiedKey, setCopiedKey] = useState(false);
   const [resettingKey, setResettingKey] = useState(false);
   const [cfg, setCfg] = useState<OpenAIClientConfig>(() => ({
@@ -85,14 +87,7 @@ export const ApiKeySection = () => {
   };
 
   const regenerateApiKey = () => {
-    if (
-      !window.confirm(
-        "Generate a new api_key?\n\n" +
-          "Update every client (OpenAI SDK, Gemini / Grok HTTP, curl, web chat cookie). " +
-          "Open web chat again from here or use ?api_key= once. " +
-          "The old key will stop working for this extension."
-      )
-    ) {
+    if (!window.confirm(t("akConfirmRegenerate"))) {
       return;
     }
     setResettingKey(true);
@@ -105,7 +100,7 @@ export const ApiKeySection = () => {
           return;
         }
         if (!res?.ok) {
-          window.alert(res?.error ?? "Could not regenerate api_key.");
+          window.alert(res?.error ?? t("akRegenFail"));
           return;
         }
         if (res.apiKey) {
@@ -120,46 +115,36 @@ export const ApiKeySection = () => {
       <div className="flex items-center gap-3 mb-4">
         <KeyRound className="text-slate-700 dark:text-slate-300" size={24} />
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-          API key
+          {t("akTitle")}
         </h2>
       </div>
       <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 leading-relaxed">
-        This secret identifies your browser session to the relay. Use it as{" "}
-        <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">
-          Authorization: Bearer …
-        </code>
-        ,{" "}
-        <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">?key=</code>{" "}
-        (Gemini-style), or{" "}
-        <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">x-goog-api-key</code>
-        . Stored only in this browser.
+        {t("akIntro")}
       </p>
 
       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-        api_key
+        {t("akLabel")}
       </label>
       <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-        Looks like an OpenAI key (
-        <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">sk-bridgegpt-…</code>
-        ). Regenerate if it may have leaked.
+        {t("akHint")}
       </p>
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
         <div className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 font-mono text-slate-900 dark:bg-slate-800/80 dark:border-slate-600 dark:text-slate-100 text-sm break-all">
-          {apiKey || "Loading…"}
+          {apiKey || t("akLoading")}
         </div>
         <div className="flex gap-2 shrink-0">
           <button
             type="button"
             onClick={regenerateApiKey}
             disabled={!apiKey || resettingKey}
-            title="Generate a new random api_key"
+            title={t("akRegenTitle")}
             className="flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 text-slate-800 font-medium px-4 py-3 rounded-xl transition-colors dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200"
           >
             <RefreshCw
               size={18}
               className={resettingKey ? "animate-spin" : ""}
             />
-            <span className="hidden sm:inline">Regenerate</span>
+            <span className="hidden sm:inline">{t("akRegenerate")}</span>
           </button>
           <button
             type="button"
@@ -168,17 +153,17 @@ export const ApiKeySection = () => {
             className="flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-medium px-4 py-3 rounded-xl transition-colors shadow-sm shadow-violet-600/20"
           >
             {copiedKey ? <Check size={18} /> : <Copy size={18} />}
-            <span>{copiedKey ? "Copied" : "Copy"}</span>
+            <span>{copiedKey ? t("akCopied") : t("akCopy")}</span>
           </button>
         </div>
       </div>
 
       <p className="text-slate-600 dark:text-slate-400 text-sm mb-2">
-        Open web chat (first visit saves a cookie; the key is removed from the URL)
+        {t("akOpenWebChat")}
       </p>
       <div className="flex items-center gap-3">
         <div className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 font-mono text-slate-900 dark:bg-slate-800/80 dark:border-slate-600 dark:text-slate-100 text-xs break-all">
-          {testUrl || "(shown when api_key is ready)"}
+          {testUrl || t("akTestUrlEmpty")}
         </div>
         <button
           type="button"

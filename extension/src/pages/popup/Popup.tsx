@@ -1,9 +1,11 @@
 import React from "react";
 import { ConnectButton } from "../settings/components/connect";
 import { useExtensionUpdateAvailable } from "@src/hooks/useExtensionUpdateAvailable";
+import { useSettingsUi } from "@src/i18n/SettingsUiContext";
 import { Settings } from "lucide-react";
 
 export default function Popup() {
+  const { t } = useSettingsUi();
   const { pending } = useExtensionUpdateAvailable();
 
   const handleEditSetting = () => {
@@ -31,7 +33,7 @@ export default function Popup() {
             </h1>
           </div>
           <p className="text-xs text-slate-600 leading-snug dark:text-slate-400">
-            Bridge Your ChatGPT Account to Your Apps
+            {t("popupTagline")}
           </p>
         </div>
       </div>
@@ -49,7 +51,7 @@ export default function Popup() {
               className="flex items-center gap-2 text-sm font-medium text-violet-700 hover:text-violet-900 py-1.5 px-3 rounded-lg border border-violet-200/80 bg-violet-50/80 hover:bg-violet-100/90 transition-colors dark:text-violet-300 dark:hover:text-violet-200 dark:border-violet-700/80 dark:bg-violet-950/60 dark:hover:bg-violet-900/50"
             >
               <Settings size={16} strokeWidth={2} />
-              <span>Open settings</span>
+              <span>{t("popupOpenSettings")}</span>
             </button>
             {pending ? (
               <span
@@ -67,8 +69,7 @@ export default function Popup() {
             id="popup-settings-update-hint"
             className="mx-auto mt-2 max-w-[14.5rem] text-center text-[11px] leading-snug text-amber-900/95 dark:text-amber-200/90"
           >
-            Dot = <strong className="font-semibold">Extension version</strong> in
-            Settings — we scroll there when you open.
+            {t("popupUpdateHint")}
           </p>
         ) : null}
       </div>

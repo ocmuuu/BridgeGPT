@@ -10,6 +10,7 @@ import {
   RELAY_SERVER_STORAGE_KEY,
 } from "@src/config";
 import { compareSemver } from "@src/lib/semverCompare";
+import { tBackground } from "@src/i18n/backgroundI18n";
 import {
   normalizeWebProviderId,
   tabUrlMatchesProvider,
@@ -60,8 +61,8 @@ async function syncExtensionUpdateBadge(): Promise<void> {
   await chrome.action.setBadgeText({ text: has ? "!" : "" });
   await chrome.action.setTitle({
     title: has
-      ? "BridgeGPT — update available (open popup → Settings)"
-      : "BridgeGPT",
+      ? tBackground("bgActionTitleUpdateAvailable")
+      : tBackground("bgActionTitleDefault"),
   });
 }
 
@@ -82,7 +83,10 @@ async function runExtensionVersionCheck(): Promise<ExtensionVersionCheckResult> 
       credentials: "omit",
     });
     if (!res.ok) {
-      return { ok: false, error: `Relay returned HTTP ${res.status}` };
+      return {
+        ok: false,
+        error: tBackground("bgRelayHttpError", [String(res.status)]),
+      };
     }
     const data = (await res.json()) as { extension?: unknown };
     const serverExt =
@@ -90,7 +94,7 @@ async function runExtensionVersionCheck(): Promise<ExtensionVersionCheckResult> 
     if (!serverExt) {
       return {
         ok: false,
-        error: "Relay /extension/version response missing extension",
+        error: tBackground("bgRelayVersionMissingExtension"),
       };
     }
 
@@ -116,7 +120,9 @@ async function runExtensionVersionCheck(): Promise<ExtensionVersionCheckResult> 
   } catch (e) {
     return {
       ok: false,
-      error: e instanceof Error ? e.message : String(e),
+      error: tBackground("bgGenericError", [
+        e instanceof Error ? e.message : String(e),
+      ]),
     };
   }
 }
@@ -411,17 +417,24 @@ async function connectWS() {
     socket.on("connect", async () => {
       const sock = socket;
       if (!sock) return;
-      const apiKey = await getStoredApiKey();
-      const origin = String(baseUrl).replace(/\/+$/, "");
+      // Read id before any await — MV3/storage gaps can drop the connection or replace `socket`.
       const socketId = sock.id;
       if (!socketId) {
         console.error("[BridgeGPT] socket.id missing after connect");
+        return;
+      }
+      const origin = String(baseUrl).replace(/\/+$/, "");
+      const apiKey = await getStoredApiKey();
+      if (socket !== sock || !sock.connected) {
         return;
       }
       const registerUrl = `${origin}/connect/${encodeURIComponent(apiKey)}?socketId=${encodeURIComponent(socketId)}`;
       try {
         const res = await fetch(registerUrl);
         const text = await res.text();
+        if (socket !== sock || !sock.connected) {
+          return;
+        }
         if (!res.ok) {
           console.error(
             "[BridgeGPT] Relay GET /connect failed:",
@@ -431,8 +444,11 @@ async function connectWS() {
           socketConnectionStatus.status = "disconnected";
           socketConnectionStatus.errorMessage =
             res.status === 404
-              ? "Relay could not attach this socket (404). Click Connect again."
-              : `Relay registration failed (${res.status}): ${text.slice(0, 160)}`;
+              ? tBackground("bgRelaySocketAttach404")
+              : tBackground("bgRelayRegistrationFailed", [
+                  String(res.status),
+                  text.slice(0, 160),
+                ]);
           safeRuntimeSendMessage({
             type: "get_connection_status",
             content: socketConnectionStatus,
@@ -452,10 +468,14 @@ async function connectWS() {
         );
         void checkExtensionVersionAgainstRelay();
       } catch (e) {
+        if (socket !== sock) {
+          return;
+        }
         console.error("[BridgeGPT] Relay /connect fetch error:", e);
         socketConnectionStatus.status = "disconnected";
-        socketConnectionStatus.errorMessage =
-          e instanceof Error ? e.message : String(e);
+        socketConnectionStatus.errorMessage = tBackground("bgRegisterFetchError", [
+          e instanceof Error ? e.message : String(e),
+        ]);
         safeRuntimeSendMessage({
           type: "get_connection_status",
           content: socketConnectionStatus,
@@ -470,7 +490,9 @@ async function connectWS() {
         return;
       }
       socketConnectionStatus.status = "disconnected";
-      socketConnectionStatus.errorMessage = String(reason);
+      socketConnectionStatus.errorMessage = tBackground("bgDisconnectReason", [
+        String(reason),
+      ]);
       safeRuntimeSendMessage({
         type: "get_connection_status",
         content: socketConnectionStatus,
@@ -578,7 +600,13 @@ const disconnectWS = () => {
 const handleErrorOnConnect = (err: any) => {
   console.log("handleErrorOnConnect ", err);
   socketConnectionStatus.status = "disconnected";
-  socketConnectionStatus.errorMessage = err.message;
+  const detail =
+    err && typeof err.message === "string" && err.message.length > 0
+      ? err.message
+      : String(err);
+  socketConnectionStatus.errorMessage = tBackground("bgConnectionError", [
+    detail,
+  ]);
   safeRuntimeSendMessage({
     type: "get_connection_status",
     content: socketConnectionStatus,

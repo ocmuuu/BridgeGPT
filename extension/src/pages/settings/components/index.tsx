@@ -7,6 +7,8 @@ import {
   Chrome,
   Link2,
 } from "lucide-react";
+import { LanguageSwitcher } from "@src/i18n/LanguageSwitcher";
+import { useSettingsUi } from "@src/i18n/SettingsUiContext";
 import { ApiKeySection } from "./apiKey";
 import { ApiUrlSection } from "./apiUrl";
 import { ConnectButton } from "./connect";
@@ -14,6 +16,7 @@ import { RelayServerSection } from "./relayServer";
 import { VersionSection } from "./versionSection";
 
 export const SettingPage = () => {
+  const { t } = useSettingsUi();
   const [keepLongConnection, setKeepLongConnection] = useState(false);
 
   useEffect(() => {
@@ -54,15 +57,17 @@ export const SettingPage = () => {
               BridgeGPT
             </h1>
           </div>
-          <div className="flex justify-between">
-            <p className="text-slate-600 dark:text-slate-400">
-              Bridge Your ChatGPT Account to Your Apps
+          <div className="flex justify-between items-start gap-3">
+            <p className="text-slate-600 dark:text-slate-400 min-w-0">
+              {t("headerTagline")}
             </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <LanguageSwitcher />
             <a
               target="_blank"
               rel="noreferrer"
               href="https://github.com/ocmuuu/BridgeGPT"
-              title="BridgeGPT on GitHub"
+              title={t("githubTitle")}
               className="text-slate-900 dark:text-slate-200 hover:opacity-80 transition-opacity"
             >
               <svg
@@ -98,6 +103,7 @@ export const SettingPage = () => {
                 </g>
               </svg>
             </a>
+            </div>
           </div>
         </div>
 
@@ -113,7 +119,7 @@ export const SettingPage = () => {
           <div className="flex items-center gap-3 mb-4">
             <Link2 className="text-slate-700 dark:text-slate-300" size={24} />
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-              Connection options
+              {t("connOptionsTitle")}
             </h2>
           </div>
           <label className="flex items-start gap-3 cursor-pointer group">
@@ -124,12 +130,11 @@ export const SettingPage = () => {
               className="mt-1 size-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-violet-600 focus:ring-violet-500"
             />
             <div>
-              <span className="font-medium text-slate-900 dark:text-slate-100">Keep alive</span>
+              <span className="font-medium text-slate-900 dark:text-slate-100">
+                {t("keepAliveTitle")}
+              </span>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-                When enabled, the setting is stored locally and every 30 seconds
-                the extension checks the relay WebSocket. If disconnected, it
-                tries to reconnect (alarms can wake the MV3 service worker; you
-                do not need to keep the settings tab open).
+                {t("keepAliveDesc")}
               </p>
             </div>
           </label>
@@ -143,11 +148,10 @@ export const SettingPage = () => {
             <Info className="text-violet-600 dark:text-violet-400 flex-shrink-0 mt-1" size={24} />
             <div className="flex-1">
               <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                How BridgeGPT Works
+                {t("howTitle")}
               </h2>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                BridgeGPT acts as a middleware between your ChatGPT account and
-                your client applications. Here's the flow:
+                {t("howIntro")}
               </p>
             </div>
           </div>
@@ -156,9 +160,11 @@ export const SettingPage = () => {
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-center dark:bg-slate-800/80 dark:border-slate-600">
               <Code className="text-slate-700 dark:text-slate-300 mx-auto mb-2" size={28} />
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                Your Client App
+                {t("flowClientTitle")}
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Using library</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {t("flowClientSub")}
+              </p>
             </div>
             <div className="flex items-center justify-center">
               <ArrowRightLeft className="text-slate-400 dark:text-slate-500" size={20} />
@@ -166,9 +172,11 @@ export const SettingPage = () => {
             <div className="bg-violet-50/80 border border-violet-200/60 rounded-xl p-4 text-center ring-1 ring-violet-100/50 dark:bg-violet-950/40 dark:border-violet-800/60 dark:ring-violet-900/40">
               <Server className="text-violet-700 dark:text-violet-300 mx-auto mb-2" size={28} />
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                Relay server
+                {t("flowRelayTitle")}
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Middleware</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {t("flowRelaySub")}
+              </p>
             </div>
             <div className="flex items-center justify-center">
               <ArrowRightLeft className="text-slate-400 dark:text-slate-500" size={20} />
@@ -176,33 +184,24 @@ export const SettingPage = () => {
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-center dark:bg-slate-800/80 dark:border-slate-600">
               <Chrome className="text-green-600 dark:text-green-400 mx-auto mb-2" size={28} />
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                Chrome Extension
+                {t("flowExtTitle")}
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">On your computer</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {t("flowExtSub")}
+              </p>
             </div>
           </div>
 
           <div className="mt-4 bg-slate-50 rounded-xl p-4 border border-slate-200/80 dark:bg-slate-800/60 dark:border-slate-600">
             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              <span className="font-semibold text-slate-900 dark:text-slate-100">Step 1:</span> Pass
-              BridgeGPT relay base URL to your library →
-              <span className="font-semibold text-slate-900 dark:text-slate-100 ml-2">Step 2:</span>{" "}
-              Request reaches our server →
-              <span className="font-semibold text-slate-900 dark:text-slate-100 ml-2">Step 3:</span>{" "}
-              Server sends command to Chrome extension →
-              <span className="font-semibold text-slate-900 dark:text-slate-100 ml-2">Step 4:</span>{" "}
-              Extension forwards to your ChatGPT account →
-              <span className="font-semibold text-slate-900 dark:text-slate-100 ml-2">Step 5:</span>{" "}
-              Response travels back through the same chain
+              {t("stepsBlock")}
             </p>
           </div>
         </div>
         <ApiUrlSection />
 
         <p className="text-center mt-8 text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-4xl mx-auto text-pretty">
-          If you work with sensitive content, consider{" "}
-          <span className="text-slate-700 dark:text-slate-300">self-hosting the relay</span> so
-          traffic stays on infrastructure you control.
+          {t("footerNote")}
         </p>
       </div>
     </div>

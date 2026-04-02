@@ -1,9 +1,9 @@
 {
   "kind": "bridgegpt.provider_execution_profile",
   "profileSchemaVersion": 1,
-  "generatedAt": "2026-04-02T04:45:10.969Z",
+  "generatedAt": "2026-04-02T05:25:25.830Z",
   "phaseModelVersion": 1,
-  "extensionVersion": "1.8.0",
+  "extensionVersion": "1.8.1",
   "about": "Structured, non-executable summary of default extension page-world behavior (wire protocol, timings, primary DOM hooks). Mirrors the shipped extension; regenerate with this script after editing providers/*.",
   "shared": {
     "contentScriptPostMessageSource": "bridgegpt-content-script",

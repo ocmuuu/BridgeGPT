@@ -6,6 +6,7 @@ import {
   LEGACY_ROOM_ID_STORAGE_KEY,
   RELAY_SERVER_STORAGE_KEY,
 } from "@src/config";
+import { useSettingsUi } from "@src/i18n/SettingsUiContext";
 
 type OpenAIClientConfig = { v1BaseUrl: string; apiKey: string };
 
@@ -26,6 +27,7 @@ type CopiedBlock =
   | "grok-py";
 
 export const ApiUrlSection = () => {
+  const { t } = useSettingsUi();
   const [tab, setTab] = useState<ClientTab>("openai");
   const [copiedBase, setCopiedBase] = useState(false);
   const [copiedBlock, setCopiedBlock] = useState<CopiedBlock | null>(null);
@@ -179,10 +181,10 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
       type="button"
       onClick={() => copyBlock(text, id)}
       className="flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300 font-medium shrink-0"
-      aria-label="Copy code as shown"
+      aria-label={t("api_copy_aria")}
     >
       {copiedBlock === id ? <Check size={16} /> : <Copy size={16} />}
-      {copiedBlock === id ? "Copied" : "Copy"}
+      {copiedBlock === id ? t("akCopied") : t("akCopy")}
     </button>
   );
 
@@ -198,12 +200,12 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
       <div className="bg-white border border-slate-200/90 rounded-xl p-6 shadow-sm shadow-slate-900/5 dark:bg-slate-900/90 dark:border-slate-700 dark:shadow-black/20">
         <div className="mb-5">
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-3">
-            Client API
+            {t("api_heading")}
           </h2>
           <div
             className="inline-flex flex-wrap gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-600"
             role="tablist"
-            aria-label="API flavor"
+            aria-label={t("api_tablist_aria")}
           >
             <button
               type="button"
@@ -213,7 +215,7 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
               className={`${tabBtn} ${tab === "openai" ? tabActive : tabIdle}`}
               onClick={() => setTab("openai")}
             >
-              OpenAI-compatible
+              {t("api_tab_openai")}
             </button>
             <button
               type="button"
@@ -223,7 +225,7 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
               className={`${tabBtn} ${tab === "gemini" ? tabActive : tabIdle}`}
               onClick={() => setTab("gemini")}
             >
-              Gemini API
+              {t("api_tab_gemini")}
             </button>
             <button
               type="button"
@@ -233,7 +235,7 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
               className={`${tabBtn} ${tab === "grok" ? tabActive : tabIdle}`}
               onClick={() => setTab("grok")}
             >
-              Grok (OpenAI route)
+              {t("api_tab_grok")}
             </button>
           </div>
         </div>
@@ -241,17 +243,13 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
         {tab === "openai" ? (
           <div role="tabpanel" aria-labelledby="tab-openai">
             <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">
-              Set{" "}
-              <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">base_url</code> to
-              the relay&apos;s{" "}
-              <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">/v1</code>. Use the
-              same <strong>api_key</strong> from the section above.
+              {t("api_openai_intro")}
             </p>
 
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  base_url (OpenAI client)
+                  {t("api_baseUrl_label")}
                 </label>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 font-mono text-slate-900 dark:bg-slate-800/80 dark:border-slate-600 dark:text-slate-100 text-sm break-all">
@@ -263,7 +261,7 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
                     className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-medium px-4 py-3 rounded-xl transition-colors shadow-sm shadow-violet-600/20"
                   >
                     {copiedBase ? <Check size={18} /> : <Copy size={18} />}
-                    <span>{copiedBase ? "Copied" : "Copy"}</span>
+                    <span>{copiedBase ? t("akCopied") : t("akCopy")}</span>
                   </button>
                 </div>
               </div>
@@ -273,12 +271,12 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
               <div className="flex items-start gap-3">
                 <Info className="text-violet-600 dark:text-violet-400 flex-shrink-0 mt-0.5" size={20} />
                 <div>
-                  <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Steps</h3>
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                    {t("api_steps")}
+                  </h3>
                   <ol className="text-sm text-slate-700 dark:text-slate-300 space-y-1 list-decimal list-inside">
-                    <li>Click Connect and stay signed in on chatgpt.com</li>
-                    <li>
-                      Python / curl below embed your api_key—copy and run (no placeholders)
-                    </li>
+                    <li>{t("api_openai_s1")}</li>
+                    <li>{t("api_openai_s2")}</li>
                   </ol>
                 </div>
               </div>
@@ -286,7 +284,9 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
 
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
               <div className="flex items-center justify-between mb-2 gap-2">
-                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Python</h3>
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                  {t("api_python")}
+                </h3>
                 {apiKey ? (
                   <CopySnippetBtn id="openai-py" text={pyExample} />
                 ) : null}
@@ -296,7 +296,9 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
                   <code className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre">{pyExample}</code>
                 </pre>
               ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">Loading api_key…</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">
+                  {t("api_loading_key")}
+                </p>
               )}
             </div>
 
@@ -308,27 +310,30 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
                 ) : null}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                <code className="bg-white dark:bg-slate-900 px-1 rounded">Authorization: Bearer</code>{" "}
-                with the same api_key as above.
+                {t("api_curl_bearer_note")}
               </p>
               {apiKey ? (
                 <pre className="bg-white border border-slate-200 rounded-lg p-3 overflow-x-auto dark:bg-slate-950 dark:border-slate-700">
                   <code className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre">{curlExample}</code>
                 </pre>
               ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">Loading api_key…</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">
+                  {t("api_loading_key")}
+                </p>
               )}
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-              <p className="text-sm text-slate-600 dark:text-slate-400">OpenAI Python SDK</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                {t("api_openai_sdk")}
+              </p>
               <a
                 href="https://github.com/openai/openai-python"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300 font-medium text-sm transition-colors"
               >
-                Docs
+                {t("api_docs")}
                 <ExternalLink size={16} />
               </a>
             </div>
@@ -336,32 +341,24 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
         ) : tab === "gemini" ? (
           <div role="tabpanel" aria-labelledby="tab-gemini">
             <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 leading-relaxed">
-              Same relay host as your OpenAI <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">base_url</code>,
-              but use Google-style paths under{" "}
-              <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">/v1beta/models/…</code>.
-              The extension drives <strong>gemini.google.com</strong> when you call these endpoints.
+              {t("api_gemini_intro")}
             </p>
             <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-2 mb-6 list-disc list-inside">
+              <li>{t("api_gemini_li_auth")}</li>
               <li>
-                Auth: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">Authorization: Bearer &lt;api_key&gt;</code>, or{" "}
-                <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">?key=</code>, or{" "}
-                <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">x-goog-api-key</code>
-              </li>
-              <li>
-                Non-stream:{" "}
                 <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded text-xs break-all">
-                  POST …/v1beta/models/&lt;model&gt;:generateContent
+                  {t("api_gemini_li_gen")}
                 </code>
               </li>
               <li>
-                Stream (SSE):{" "}
                 <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded text-xs break-all">
-                  POST …/v1beta/models/&lt;model&gt;:streamGenerateContent
+                  {t("api_gemini_li_stream")}
                 </code>
               </li>
               <li>
-                List models:{" "}
-                <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">GET …/v1beta/models</code>
+                <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">
+                  {t("api_gemini_li_list")}
+                </code>
               </li>
             </ul>
 
@@ -369,10 +366,12 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
               <div className="flex items-start gap-3">
                 <Info className="text-violet-600 dark:text-violet-400 flex-shrink-0 mt-0.5" size={20} />
                 <div>
-                  <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Steps</h3>
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                    {t("api_steps")}
+                  </h3>
                   <ol className="text-sm text-slate-700 dark:text-slate-300 space-y-1 list-decimal list-inside">
-                    <li>Click Connect and stay signed in on gemini.google.com</li>
-                    <li>Call the endpoints below with your api_key (examples use Bearer)</li>
+                    <li>{t("api_gemini_s1")}</li>
+                    <li>{t("api_gemini_s2")}</li>
                   </ol>
                 </div>
               </div>
@@ -381,7 +380,7 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
               <div className="flex items-center justify-between mb-2 gap-2">
                 <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">
-                  Example URLs ({geminiModel})
+                  {t("api_example_urls", [geminiModel])}
                 </h3>
                 <CopySnippetBtn id="gemini-urls" text={geminiExampleUrlsText} />
               </div>
@@ -395,7 +394,9 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
 
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
               <div className="flex items-center justify-between mb-2 gap-2">
-                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">curl (generateContent)</h3>
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                  {t("api_gemini_curl_gen")}
+                </h3>
                 {apiKey ? (
                   <CopySnippetBtn id="gemini-curl-gen" text={geminiCurlGenerate} />
                 ) : null}
@@ -405,11 +406,13 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
                   <code className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre">{geminiCurlGenerate}</code>
                 </pre>
               ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400 py-2 mb-3">Loading api_key…</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-2 mb-3">
+                  {t("api_loading_key")}
+                </p>
               )}
               <div className="flex items-center justify-between mb-1 gap-2">
                 <h4 className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                  streamGenerateContent (SSE)
+                  {t("api_gemini_stream_h")}
                 </h4>
                 {apiKey ? (
                   <CopySnippetBtn id="gemini-curl-stream" text={geminiCurlStream} />
@@ -424,7 +427,9 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
 
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
               <div className="flex items-center justify-between mb-2 gap-2">
-                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Python (requests)</h3>
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                  {t("api_gemini_py_rq")}
+                </h3>
                 {apiKey ? (
                   <CopySnippetBtn id="gemini-py" text={geminiPyExample} />
                 ) : null}
@@ -434,43 +439,36 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
                   <code className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre">{geminiPyExample}</code>
                 </pre>
               ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">Loading api_key…</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">
+                  {t("api_loading_key")}
+                </p>
               )}
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-200 dark:border-slate-700">
-              Alternative: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">POST /v1/chat/completions</code> with header{" "}
-              <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">X-Bridge-Provider: gemini</code> still routes to the Gemini tab.
+              {t("api_gemini_footer")}
             </p>
           </div>
         ) : (
           <div role="tabpanel" aria-labelledby="tab-grok">
             <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 leading-relaxed">
-              Same <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">base_url</code> and{" "}
-              <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">POST …/v1/chat/completions</code> as the OpenAI-compatible tab,
-              but add the header{" "}
-              <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">X-Bridge-Provider: grok</code> so the extension uses{" "}
-              <strong>grok.com</strong> instead of ChatGPT.
+              {t("api_grok_intro")}
             </p>
             <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-2 mb-6 list-disc list-inside">
-              <li>
-                Model names like <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{grokModel}</code> are labels; the live Grok session picks the real model.
-              </li>
-              <li>
-                Streaming (<code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">&quot;stream&quot;: true</code>) works the same as ChatGPT.
-              </li>
+              <li>{t("api_grok_li1")}</li>
+              <li>{t("api_grok_li2")}</li>
             </ul>
 
             <div className="bg-violet-50 border border-violet-200/80 rounded-xl p-4 mb-4 dark:bg-violet-950/40 dark:border-violet-800/60">
               <div className="flex items-start gap-3">
                 <Info className="text-violet-600 dark:text-violet-400 flex-shrink-0 mt-0.5" size={20} />
                 <div>
-                  <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Steps</h3>
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                    {t("api_steps")}
+                  </h3>
                   <ol className="text-sm text-slate-700 dark:text-slate-300 space-y-1 list-decimal list-inside">
-                    <li>Click Connect and stay signed in on grok.com</li>
-                    <li>
-                      Python / curl below embed your api_key—copy and run (no placeholders)
-                    </li>
+                    <li>{t("api_grok_s1")}</li>
+                    <li>{t("api_grok_s2")}</li>
                   </ol>
                 </div>
               </div>
@@ -478,7 +476,9 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
 
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
               <div className="flex items-center justify-between mb-2 gap-2">
-                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Python (OpenAI SDK)</h3>
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                  {t("api_grok_python")}
+                </h3>
                 {apiKey ? (
                   <CopySnippetBtn id="grok-py" text={grokPyExample} />
                 ) : null}
@@ -488,40 +488,46 @@ print(r.json()["candidates"][0]["content"]["parts"][0]["text"])`
                   <code className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre">{grokPyExample}</code>
                 </pre>
               ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">Loading api_key…</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">
+                  {t("api_loading_key")}
+                </p>
               )}
             </div>
 
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 dark:bg-slate-800/50 dark:border-slate-600">
               <div className="flex items-center justify-between mb-2 gap-2">
-                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">curl</h3>
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                  {t("api_curl")}
+                </h3>
                 {apiKey ? (
                   <CopySnippetBtn id="grok-curl" text={grokCurlExample} />
                 ) : null}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                Requires{" "}
-                <code className="bg-white dark:bg-slate-900 px-1 rounded">X-Bridge-Provider: grok</code>{" "}
-                in addition to <code className="bg-white dark:bg-slate-900 px-1 rounded">Authorization: Bearer</code>.
+                {t("api_grok_curl_note")}
               </p>
               {apiKey ? (
                 <pre className="bg-white border border-slate-200 rounded-lg p-3 overflow-x-auto dark:bg-slate-950 dark:border-slate-700">
                   <code className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre">{grokCurlExample}</code>
                 </pre>
               ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">Loading api_key…</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">
+                  {t("api_loading_key")}
+                </p>
               )}
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-              <p className="text-sm text-slate-600 dark:text-slate-400">OpenAI Python SDK</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                {t("api_openai_sdk")}
+              </p>
               <a
                 href="https://github.com/openai/openai-python"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300 font-medium text-sm transition-colors"
               >
-                Docs
+                {t("api_docs")}
                 <ExternalLink size={16} />
               </a>
             </div>

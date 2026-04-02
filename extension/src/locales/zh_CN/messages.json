@@ -1,0 +1,50 @@
+{
+  "extName": {
+    "message": "BridgeGPT",
+    "description": "扩展名称"
+  },
+  "extDescription": {
+    "message": "通过自托管中继，将 ChatGPT、Gemini 或 Grok（网页版）桥接到你的应用。",
+    "description": "扩展管理界面中的简短说明"
+  },
+  "bgActionTitleDefault": {
+    "message": "BridgeGPT",
+    "description": "无更新提示时的工具栏按钮悬停文案"
+  },
+  "bgActionTitleUpdateAvailable": {
+    "message": "BridgeGPT — 有可用更新（请打开弹出窗口 → 设置）",
+    "description": "中继报告有新版扩展时的工具栏提示"
+  },
+  "bgRelayHttpError": {
+    "message": "中继返回 HTTP $1",
+    "description": "版本检查：中继返回非成功状态码"
+  },
+  "bgRelayVersionMissingExtension": {
+    "message": "中继 /extension/version 响应缺少 extension 字段",
+    "description": "版本检查：JSON 中无扩展版本号"
+  },
+  "bgRelaySocketAttach404": {
+    "message": "中继无法关联此连接（404）。请再次点击连接。",
+    "description": "注册 WebSocket 时 GET /connect 返回 404"
+  },
+  "bgRelayRegistrationFailed": {
+    "message": "中继注册失败（$1）：$2",
+    "description": "WebSocket 注册失败。$1 为状态码，$2 为响应片段"
+  },
+  "bgDisconnectReason": {
+    "message": "已断开：$1",
+    "description": "Socket 断开原因"
+  },
+  "bgConnectionError": {
+    "message": "连接错误：$1",
+    "description": "Socket.IO 连接错误"
+  },
+  "bgRegisterFetchError": {
+    "message": "中继 /connect 请求失败：$1",
+    "description": "连接建立后请求中继注册时出错"
+  },
+  "bgGenericError": {
+    "message": "$1",
+    "description": "直接展示底层错误信息"
+  }
+}

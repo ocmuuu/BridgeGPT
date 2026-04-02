@@ -13,6 +13,9 @@ export const RELAY_SERVER_STORAGE_KEY = "relayServerBaseUrl";
  */
 export const RELAY_PAUSED_BY_USER_KEY = "relayPausedByUser";
 
+/** chrome.storage.local: settings / popup UI language (`en` | `zh`). */
+export const SETTINGS_UI_LOCALE_KEY = "bridgegptSettingsUiLocale";
+
 /** chrome.storage.local: OpenAI-style `api_key` for this extension (e.g. sk-bridgegpt-…). */
 export const API_KEY_STORAGE_KEY = "bridgegptApiKey";
 

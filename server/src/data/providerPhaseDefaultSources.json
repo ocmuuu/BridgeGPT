@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-04-02T04:45:10.965Z",
+  "generatedAt": "2026-04-02T05:25:25.819Z",
   "phaseModelVersion": 1,
   "shared": {
     "dom": {
       "relativePath": "extension/src/pages/content/providers/shared/dom.ts",
-      "typescript": "/**\n * Reference copy of `sleep` / `waitFor` for DOM-poll providers.\n * Gemini/Grok **page-world** bundles inline these in `domHelpers.ts` so\n * `gemini-page.js` / `grok-page.js` stay single classic scripts (injected without\n * `type=\"module\"`); do not import this file from those entry graphs.\n */\n\nexport function sleep(ms: number): Promise<void> {\n  return new Promise((r) => setTimeout(r, ms));\n}\n\nexport async function waitFor<T>(\n  fn: () => T | null | undefined,\n  timeoutMs: number,\n  intervalMs = 120\n): Promise<T | null> {\n  const end = Date.now() + timeoutMs;\n  while (Date.now() < end) {\n    const v = fn();\n    if (v) return v;\n    await sleep(intervalMs);\n  }\n  return null;\n}\n"
+      "typescript": "/**\n * Reference copy of `sleep` / `waitFor` for DOM-poll providers.\n * ChatGPT/Gemini/Grok **page-world** bundles inline these in `domHelpers.ts` so\n * `*-page.js` scripts stay single classic bundles (injected without `type=\"module\"`);\n * do not import this file from those entry graphs.\n */\n\nexport function sleep(ms: number): Promise<void> {\n  return new Promise((r) => setTimeout(r, ms));\n}\n\nexport async function waitFor<T>(\n  fn: () => T | null | undefined,\n  timeoutMs: number,\n  intervalMs = 120\n): Promise<T | null> {\n  const end = Date.now() + timeoutMs;\n  while (Date.now() < end) {\n    const v = fn();\n    if (v) return v;\n    await sleep(intervalMs);\n  }\n  return null;\n}\n"
     }
   },
   "providers": {

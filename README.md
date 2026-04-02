@@ -75,6 +75,7 @@ sequenceDiagram
 - **Gemini API–shaped routes** — `GET /v1beta/models`, `POST /v1beta/models/<id>:generateContent` (and `:streamGenerateContent`), same **Bearer `api_key`** as other relay routes. Responses are a **minimal subset** of the real Google API (text + usage estimates); thread context stays in the browser tab.
 - **Self-hosted relay** — Express + Socket.IO; default port **3456**.
 - **Configurable extension** — Build-time **`VITE_API_BASE_URL`** points the extension at your relay (must end with `/`).
+- **Settings UI languages** — Extension **Settings** and the toolbar **popup** can use **English** or **简体中文**; the choice is stored in extension local storage (Chrome: `_locales` + in-page strings).
 - **Keep-alive option** — Extension can periodically retry the WebSocket if disconnected (see Settings).
 - **Relay home** — `GET /` shows a welcome page without `api_key`. With `?api_key=<your key from Settings>` you get an in-browser chat UI (OpenAI, Gemini, or Grok backend; use **`&backend=gemini`** or **`&backend=grok`**). Optional `&message=…` pre-sends the first user turn. `?format=json` (or `Accept: application/json`) returns machine-readable status and a sample `chatUrl`.
 - **Unified provider pipeline** — ChatGPT, Gemini, and Grok share the same high-level phases in the extension (receive → resolve composer → fill → submit → wait/capture → emit). ChatGPT captures assistant text from **SSE** in the page; Gemini and Grok use **DOM polling** with site-specific heuristics.
@@ -124,7 +125,7 @@ Pick **either** a pre-built zip from GitHub Releases **or** a local build from s
 
 #### A) GitHub Releases (simplest)
 
-1. Open **[BridgeGPT Releases](https://github.com/ocmuuu/BridgeGPT/releases)** and download **`bridgegpt-chrome-<tag>.zip`** for the version you want (the workflow attaches one zip per release tag, e.g. `bridgegpt-chrome-v1.8.0.zip`).
+1. Open **[BridgeGPT Releases](https://github.com/ocmuuu/BridgeGPT/releases)** and download **`bridgegpt-chrome-<tag>.zip`** for the version you want (the workflow attaches one zip per release tag, e.g. `bridgegpt-chrome-v1.8.1.zip`).
 2. In Chrome, go to **`chrome://extensions`**.
 3. Turn on **Developer mode** (top right).
 4. **Drag and drop** the downloaded zip onto the Extensions page to install.  

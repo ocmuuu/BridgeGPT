@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Loader2, Package } from "lucide-react";
 import { BRIDGEGPT_GITHUB_RELEASES_URL } from "@src/config";
 import { useExtensionUpdateAvailable } from "@src/hooks/useExtensionUpdateAvailable";
+import { useSettingsUi } from "@src/i18n/SettingsUiContext";
 
 type VersionCheckResponse =
   | {
@@ -13,6 +14,7 @@ type VersionCheckResponse =
   | { ok: false; error: string };
 
 export function VersionSection() {
+  const { t } = useSettingsUi();
   const { pending, serverVersion } = useExtensionUpdateAvailable();
   const localVersion =
     typeof chrome.runtime.getManifest().version === "string"
@@ -34,12 +36,12 @@ export function VersionSection() {
         void chrome.runtime.lastError;
         if (chrome.runtime.lastError) {
           setManualError(
-            chrome.runtime.lastError.message ?? "Extension message failed"
+            chrome.runtime.lastError.message ?? t("verExtMsgFail")
           );
           return;
         }
         if (!r || typeof r !== "object" || !("ok" in r)) {
-          setManualError("No response from extension");
+          setManualError(t("verNoResponse"));
           return;
         }
         if (!r.ok) {
@@ -81,30 +83,11 @@ export function VersionSection() {
             id="extension-version-heading"
             className="text-xl font-semibold text-slate-900 dark:text-slate-100"
           >
-            Extension version
+            {t("verTitle")}
           </h2>
           {highlight ? (
             <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              <span className="font-medium text-slate-700 dark:text-slate-300">
-                Toolbar{" "}
-                <span className="font-mono rounded bg-slate-200/80 px-1 py-px dark:bg-slate-700">
-                  !
-                </span>{" "}
-                badge
-              </span>{" "}
-              and the{" "}
-              <span className="font-medium text-slate-700 dark:text-slate-300">
-                amber dot
-              </span>{" "}
-              next to{" "}
-              <span className="font-medium text-slate-700 dark:text-slate-300">
-                Open settings
-              </span>{" "}
-              in the popup both mean: your relay reports a{" "}
-              <strong>newer</strong> extension than this install.{" "}
-              <span className="text-slate-700 dark:text-slate-300">
-                This block is where that is explained.
-              </span>
+              {t("verHighlight")}
             </p>
           ) : null}
         </div>
@@ -123,10 +106,10 @@ export function VersionSection() {
           {checking ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              Checking…
+              {t("verChecking")}
             </>
           ) : (
-            "Check"
+            t("verCheck")
           )}
         </button>
       </div>
@@ -137,24 +120,22 @@ export function VersionSection() {
 
       {manualUnchanged && !recommendServer ? (
         <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
-          Version unchanged — relay does not recommend a newer build.
+          {t("verUnchanged")}
         </p>
       ) : null}
 
       {recommendServer ? (
         <p className="mt-3 text-sm text-amber-950 dark:text-amber-50/95 leading-relaxed">
-          <span className="font-semibold">Update available.</span> Relay recommends{" "}
-          <span className="font-mono font-medium">v{recommendServer}</span>. Install
-          the latest Chrome extension from{" "}
+          {t("verUpdateBefore", [recommendServer])}{" "}
           <a
             href={BRIDGEGPT_GITHUB_RELEASES_URL}
             target="_blank"
             rel="noreferrer"
             className="font-semibold underline underline-offset-2 hover:opacity-90"
           >
-            GitHub Releases
+            {t("verGhReleases")}
           </a>
-          .
+          {t("verUpdateAfter")}
         </p>
       ) : null}
     </section>

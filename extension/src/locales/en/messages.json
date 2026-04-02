@@ -1,10 +1,50 @@
 {
   "extName": {
-    "message": "name in src/locales/en/messages.json",
-    "description": "Extension name"
+    "message": "BridgeGPT",
+    "description": "Extension name in the Chrome Web Store and browser UI."
   },
   "extDescription": {
-    "message": "description in src/locales/en/messages.json",
-    "description": "Extension description"
+    "message": "Bridge ChatGPT, Gemini, or Grok (web) to your apps via a self-hosted relay.",
+    "description": "Short description shown in the extension management UI."
+  },
+  "bgActionTitleDefault": {
+    "message": "BridgeGPT",
+    "description": "Toolbar action tooltip when no update is advertised."
+  },
+  "bgActionTitleUpdateAvailable": {
+    "message": "BridgeGPT — update available (open popup → Settings)",
+    "description": "Toolbar action tooltip when relay reports a newer extension version."
+  },
+  "bgRelayHttpError": {
+    "message": "Relay returned HTTP $1",
+    "description": "Version check: non-OK HTTP status from relay. $1 = status code."
+  },
+  "bgRelayVersionMissingExtension": {
+    "message": "Relay /extension/version response missing extension field",
+    "description": "Version check: JSON body did not include extension semver."
+  },
+  "bgRelaySocketAttach404": {
+    "message": "Relay could not attach this socket (404). Click Connect again.",
+    "description": "WebSocket registration GET /connect returned 404."
+  },
+  "bgRelayRegistrationFailed": {
+    "message": "Relay registration failed ($1): $2",
+    "description": "WebSocket registration failed. $1 = HTTP status, $2 = response snippet."
+  },
+  "bgDisconnectReason": {
+    "message": "Disconnected: $1",
+    "description": "Socket disconnected. $1 = engine reason string."
+  },
+  "bgConnectionError": {
+    "message": "Connection error: $1",
+    "description": "Generic Socket.IO connect error. $1 = message."
+  },
+  "bgRegisterFetchError": {
+    "message": "Relay /connect request failed: $1",
+    "description": "Network or exception while calling relay after socket connect. $1 = message."
+  },
+  "bgGenericError": {
+    "message": "$1",
+    "description": "Passthrough for unknown errors (version check catch, etc.). $1 = message."
   }
 }

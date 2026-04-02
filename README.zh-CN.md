@@ -75,6 +75,7 @@ sequenceDiagram
 - **Gemini API 形态路由** — `GET /v1beta/models`、`POST /v1beta/models/<id>:generateContent`（及 `:streamGenerateContent`），与其它路由一样使用 **Bearer `api_key`** 鉴权。返回 JSON 为**精简版**（非与 Google 官方逐字段一致；用量为估算；对话上下文以浏览器标签页为准）。
 - **自托管中继** — Express + Socket.IO；默认端口 **3456**。
 - **可配置扩展** — 构建时使用 **`VITE_API_BASE_URL`** 指向你的中继（必须以 **`/`** 结尾）。
+- **设置界面语言** — 扩展 **设置页** 与工具栏 **弹出面板** 支持 **English** 与 **简体中文**，语言偏好保存在扩展本地存储（Chrome 侧为 `_locales` 与页面内文案配合）。
 - **保活** — 断线后可按设置周期性重连 WebSocket。
 - **中继首页** — 无 `api_key` 时 `GET /` 为欢迎页；带 `?api_key=<设置里的密钥>` 可打开**内置网页对话**（可选 **`&backend=gemini`** 或 **`&backend=grok`**）。可选 `&message=…` 预填首轮用户消息。`?format=json` 或 `Accept: application/json` 返回机器可读状态与示例 `chatUrl`。
 - **统一的提供商流水线** — ChatGPT、Gemini、Grok 在扩展侧共用同一套高层阶段（接收 → 定位输入框 → 填入 → 发送 → 等待/采集 → 上报）。ChatGPT 在页面内从 **SSE** 取助手正文；Gemini / Grok 用 **DOM 轮询** 与各站启发式。
@@ -124,7 +125,7 @@ curl -sS http://127.0.0.1:3456/health
 
 #### A）GitHub Releases（推荐一般用户）
 
-1. 打开 **[BridgeGPT Releases](https://github.com/ocmuuu/BridgeGPT/releases)**，下载对应版本的 **`bridgegpt-chrome-<tag>.zip`**（CI 会为每个 **`v*`** 标签附带压缩包，例如 `bridgegpt-chrome-v1.8.0.zip`）。
+1. 打开 **[BridgeGPT Releases](https://github.com/ocmuuu/BridgeGPT/releases)**，下载对应版本的 **`bridgegpt-chrome-<tag>.zip`**（CI 会为每个 **`v*`** 标签附带压缩包，例如 `bridgegpt-chrome-v1.8.1.zip`）。
 2. 在 Chrome 地址栏打开 **`chrome://extensions`**。
 3. 右上角打开 **开发者模式**。
 4. 将下载好的 **zip 拖到扩展程序页面**上完成安装。  
