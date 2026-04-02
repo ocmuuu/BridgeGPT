@@ -1,7 +1,7 @@
 {
   "name": "@bridgegpt/server",
-  "version": "1.7.0",
-  "extensionVersion": "1.7.0",
+  "version": "1.8.0",
+  "extensionVersion": "1.8.0",
   "private": true,
   "description": "BridgeGPT relay: OpenAI-compatible HTTP + Socket.IO for the browser extension.",
   "type": "module",
@@ -9,7 +9,7 @@
     "dev": "concurrently -n api,relay -c blue,magenta \"tsx watch src/index.ts\" \"vite build --watch --config vite.config.relay-chat.ts\"",
     "dev:relay-chat": "vite build --watch --config vite.config.relay-chat.ts",
     "build:relay-chat": "vite build --config vite.config.relay-chat.ts",
-    "build": "npm run build:relay-chat && tsc",
+    "build": "node ../scripts/sync-provider-phase-sources.mjs && npm run build:relay-chat && tsc && mkdir -p dist/data && cp src/data/providerPhaseDefaultSources.json src/data/providerPhaseExecutionProfile.json dist/data/",
     "start": "node dist/index.js"
   },
   "dependencies": {

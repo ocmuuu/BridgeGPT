@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { EXTENSION_UPDATE_AVAILABLE_KEY } from "@src/config";
 
-/** Relay `GET /version` is newer than this install (see background `checkExtensionVersionAgainstRelay`). */
+/** Relay `GET /extension/version` is newer than this install (see background `checkExtensionVersionAgainstRelay`). */
 export function useExtensionUpdateAvailable(): {
   pending: boolean;
   serverVersion: string | null;

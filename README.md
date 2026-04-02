@@ -77,6 +77,8 @@ sequenceDiagram
 - **Configurable extension** — Build-time **`VITE_API_BASE_URL`** points the extension at your relay (must end with `/`).
 - **Keep-alive option** — Extension can periodically retry the WebSocket if disconnected (see Settings).
 - **Relay home** — `GET /` shows a welcome page without `api_key`. With `?api_key=<your key from Settings>` you get an in-browser chat UI (OpenAI, Gemini, or Grok backend; use **`&backend=gemini`** or **`&backend=grok`**). Optional `&message=…` pre-sends the first user turn. `?format=json` (or `Accept: application/json`) returns machine-readable status and a sample `chatUrl`.
+- **Unified provider pipeline** — ChatGPT, Gemini, and Grok share the same high-level phases in the extension (receive → resolve composer → fill → submit → wait/capture → emit). ChatGPT captures assistant text from **SSE** in the page; Gemini and Grok use **DOM polling** with site-specific heuristics.
+- **Relay discovery JSON** — `GET /extension/version` returns expected **extension** and **relay** semver (used by the extension for update hints). `GET /extension/provider-phase-config` returns the phase list plus a structured **`providerExecutionProfile`** (timeouts, `postMessage` identities, primary selectors — not executable code). Developer-only mirror of bundled TypeScript: add **`?include=typescript_sources`**.
 
 ---
 
@@ -116,23 +118,39 @@ curl -sS http://127.0.0.1:3456/health
 # {"ok":true}
 ```
 
-### 3. Build and load the extension
+### 3. Install the Chrome extension
 
-**Chrome (watch mode):**
+Pick **either** a pre-built zip from GitHub Releases **or** a local build from source.
+
+#### A) GitHub Releases (simplest)
+
+1. Open **[BridgeGPT Releases](https://github.com/ocmuuu/BridgeGPT/releases)** and download **`bridgegpt-chrome-<tag>.zip`** for the version you want (the workflow attaches one zip per release tag, e.g. `bridgegpt-chrome-v1.8.0.zip`).
+2. In Chrome, go to **`chrome://extensions`**.
+3. Turn on **Developer mode** (top right).
+4. **Drag and drop** the downloaded zip onto the Extensions page to install.  
+   If your Chrome build does not accept a zip this way, unzip the archive and use **Load unpacked** → select the **folder that contains `manifest.json`** (the unzipped contents of `dist_chrome`).
+
+To **update**, download the newer release zip and repeat; Chrome will replace the extension when you drop the new package or reload the unpacked folder after replacing files.
+
+#### B) Build from source (developers)
+
+**Watch mode:**
 
 ```bash
 npm run dev:chrome
 ```
 
-**One-off production build:**
+**Production output** (`extension/dist_chrome/`):
 
 ```bash
 npm run build:chrome
 ```
 
-Then open **chrome://extensions** → enable **Developer mode** → **Load unpacked** → choose **`extension/dist_chrome/`**.
+Then **chrome://extensions** → **Developer mode** → **Load unpacked** → select **`extension/dist_chrome/`**.
 
-**Firefox:** use `npm run dev:firefox` or `npm run build:firefox` and load from **`extension/dist_firefox/`** via `about:debugging`.
+**Firefox:** `npm run dev:firefox` or `npm run build:firefox`, then load **`extension/dist_firefox/`** via **about:debugging** → *This Firefox* → *Load Temporary Add-on*.
+
+Release automation for Chrome zips: [.github/workflows/release-chrome-extension.yml](.github/workflows/release-chrome-extension.yml) (triggered by pushing a **`v*`** tag).
 
 ### 4. Connect and get credentials
 
@@ -268,6 +286,8 @@ Legacy routes under **`/app/<api_key>/v1/...`** embed the same value in the path
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/health` | No | Liveness: `{ "ok": true }` |
+| GET | `/extension/version` | No | `{ "extension": "<semver>", "relay": "<semver>" }` — expected extension build vs server package; extension uses this for update hints |
+| GET | `/extension/provider-phase-config` | No | Phase model, per-provider strategy, embedded **`providerExecutionProfile`** (structured defaults). Optional **`?include=typescript_sources`** adds large **`providerStepDefaults`** (TypeScript sources) |
 | GET | `/connect/:api_key?socketId=...` | No | Called by the extension after Socket.IO connect; path segment is the same **api_key** as for HTTP |
 | GET | `/v1/models` | Bearer / API key | Lists `gpt-5` / `gpt-5-mini` (labels only; the web UI picks the real model) |
 | GET | `/v1/models/:modelId` | Bearer / API key | Model metadata |
@@ -299,6 +319,7 @@ Run from the **repository root**:
 | `npm run dev:firefox` | Extension dev (watch) for Firefox |
 | `npm run build:chrome` | Production extension build → `extension/dist_chrome/` |
 | `npm run build:firefox` | Production extension build → `extension/dist_firefox/` |
+| `npm run gen:provider-sources` | Regenerate `server/src/data/providerPhaseDefaultSources.json` and `providerPhaseExecutionProfile.json` from `extension/src/pages/content/providers/*` (run after editing provider page-world code) |
 
 **Production relay process** (after build):
 
@@ -346,8 +367,8 @@ npm run start -w @bridgegpt/server
 | HTTP **504** / timeout | Target tab closed, slow, or still loading; increase `RELAY_REQUEST_TIMEOUT_MS`; keep **chatgpt.com** / **chat.openai.com**, **gemini.google.com**, or **grok.com** focused enough to finish rendering. |
 | New tab on every request after **extension reload** | Service worker restarted; in-memory tab mapping is lost. Chrome should re-inject content scripts—if `tabs.sendMessage` fails once, the extension may open a **new** tab. Refresh the existing provider tab or send a second request after reload. |
 | Empty or wrong replies (ChatGPT) | UI selectors may need an update after a site redesign; check the browser console on the ChatGPT tab. |
-| Empty, stale, or wrong replies (Gemini) | Ensure **gemini.google.com** is logged in; multi-turn answers are matched to the prompt sent for that request—see extension `gemini-page` logic if the UI changes. |
-| Empty or wrong replies (Grok) | Stay signed in on **grok.com**. The extension reads the **current turn** assistant body (inside `#last-reply-container` / `.response-content-markdown`), not older bubbles, user echoes, or the thinking header—short preview lines may be ignored until the full answer stabilizes. After a site redesign, update `grok-page` / `GrokWebProvider`. |
+| Empty, stale, or wrong replies (Gemini) | Ensure **gemini.google.com** is logged in; multi-turn answers are matched to the prompt sent for that request—see `extension/src/pages/content/providers/gemini/*` if the UI changes. |
+| Empty or wrong replies (Grok) | Stay signed in on **grok.com**. The extension reads the **current turn** assistant body (inside `#last-reply-container` / `.response-content-markdown`), not older bubbles, user echoes, or the thinking header—short preview lines may be ignored until the full answer stabilizes. After a site redesign, update `extension/src/pages/content/providers/grok/*` and `GrokWebProvider`. |
 | CORS from a web app | Relay enables permissive CORS for API use; for cookie-based browsers, prefer **server-side** calls to the relay. |
 
 ---
@@ -359,7 +380,7 @@ bridgegpt/
 ├── docs/                      # e.g. [SERVER_DEPLOY.md](docs/SERVER_DEPLOY.md)
 ├── extension/                 # Vite + CRXJS (Chrome / Firefox)
 │   ├── src/pages/background/  # Service worker, Socket.IO client
-│   ├── src/pages/content/     # index.tsx (content script); chatgpt-page / gemini-page / grok-page (page world) + webProviders/chatgptWeb|geminiWeb|grokWeb
+│   ├── src/pages/content/     # index.tsx (content script); *-page.ts entries; providers/chatgpt|gemini|grok/* (page world) + webProviders/*
 │   ├── src/pages/settings/    # Settings UI (connect, API URL, keep-alive)
 │   ├── manifest.json
 │   └── package.json           # workspace: bridgegpt-extension
@@ -369,9 +390,11 @@ bridgegpt/
 │   │   ├── socket/
 │   │   │   └── extensionRelay.ts  # Pending queue, /connect route, Socket.IO
 │   │   ├── api/
+│   │   │   ├── extension/     # GET /extension/version, /extension/provider-phase-config
 │   │   │   ├── openai/        # /v1/* (chat completions, models, SSE)
 │   │   │   ├── gemini/        # /v1beta/* Gemini-shaped routes
 │   │   │   └── web/           # Prompt / markup helpers for provider web UIs
+│   │   ├── data/              # providerPhase*.json (embedded at build; copied to dist/data)
 │   │   └── web/               # Relay home (`GET /`) and embedded chat shell
 │   └── package.json           # workspace: @bridgegpt/server
 ├── package.json               # Workspace root

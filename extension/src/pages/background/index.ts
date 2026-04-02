@@ -41,7 +41,7 @@ const KEEP_ALIVE_ALARM = "bridgegpt-keep-alive";
 const KEEP_ALIVE_DELAY_MINUTES = 30 / 60;
 
 const EXTENSION_VERSION_CHECK_ALARM = "bridgegpt-extension-version-check";
-/** Daily check against relay `GET /version`. */
+/** Daily check against relay `GET /extension/version`. */
 const EXTENSION_VERSION_CHECK_PERIOD_MINUTES = 24 * 60;
 
 function scheduleExtensionVersionCheckAlarm(): void {
@@ -78,7 +78,9 @@ async function runExtensionVersionCheck(): Promise<ExtensionVersionCheckResult> 
   try {
     const base = await getEffectiveRelayBaseUrl();
     const origin = String(base).replace(/\/+$/, "");
-    const res = await fetch(`${origin}/version`, { credentials: "omit" });
+    const res = await fetch(`${origin}/extension/version`, {
+      credentials: "omit",
+    });
     if (!res.ok) {
       return { ok: false, error: `Relay returned HTTP ${res.status}` };
     }
@@ -86,7 +88,10 @@ async function runExtensionVersionCheck(): Promise<ExtensionVersionCheckResult> 
     const serverExt =
       typeof data.extension === "string" ? data.extension.trim() : "";
     if (!serverExt) {
-      return { ok: false, error: "Relay /version response missing extension" };
+      return {
+        ok: false,
+        error: "Relay /extension/version response missing extension",
+      };
     }
 
     const local =

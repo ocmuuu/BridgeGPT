@@ -10,8 +10,8 @@ import {
   registerExtensionConnectRoute,
 } from "./socket/extensionRelay.js";
 import { SERVER_PUBLIC_DIR } from "./serverPublicPath.js";
-import { registerExtensionProviderPhaseConfigRoute } from "./extensionProviderPhaseConfig.js";
-import { registerVersionRoute } from "./relayVersion.js";
+import { registerExtensionProviderPhaseConfigRoute } from "./api/extension/providerPhaseConfig.js";
+import { registerVersionRoute } from "./api/extension/relayVersion.js";
 
 const PORT = Number(process.env.PORT) || 3456;
 

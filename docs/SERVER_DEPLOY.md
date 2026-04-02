@@ -278,13 +278,15 @@ sudo systemctl reload caddy
 
 ## 8. Browser extension
 
-Build the extension with your public relay URL (**trailing slash**):
+**Option A — pre-built Chrome zip:** download **`bridgegpt-chrome-*.zip`** from [GitHub Releases](https://github.com/ocmuuu/BridgeGPT/releases), then install via **chrome://extensions** (Developer mode → drag zip, or unzip and **Load unpacked**). Default embedded relay URL is localhost; for a public relay you still need a build with **`VITE_API_BASE_URL`** (Option B).
+
+**Option B — build against your relay** (**trailing slash** on the URL):
 
 ```bash
 VITE_API_BASE_URL=https://relay.example.com/ npm run build:chrome
 ```
 
-Install that build in the browser that stays logged in to **chatgpt.com**, **gemini.google.com**, and/or **grok.com** as needed. See the main [README](../README.md) for API and security notes.
+Install that build in the browser that stays logged in to **chatgpt.com**, **gemini.google.com**, and/or **grok.com** as needed. See the main [README](../README.md) for API, Chrome zip install steps, and security notes.
 
 ---
 

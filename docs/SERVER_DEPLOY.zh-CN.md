@@ -207,11 +207,15 @@ sudo systemctl reload caddy
 
 ## 8. 扩展
 
+**方式 A — 官方 Chrome zip：** 在 [GitHub Releases](https://github.com/ocmuuu/BridgeGPT/releases) 下载 **`bridgegpt-chrome-*.zip`**，在 **chrome://extensions** 开启开发者模式后**拖入 zip**（或解压后 **加载已解压的扩展程序**）。默认内置中继多为本机；若要对**公网中继**使用，仍需按方式 B 用 **`VITE_API_BASE_URL`** 自行构建。
+
+**方式 B — 指向你的中继构建**（URL **必须带尾部 `/`**）：
+
 ```bash
 VITE_API_BASE_URL=https://你的域名/ npm run build:chrome
 ```
 
-URL 末尾必须有 **`/`**。详见主 [README](../README.zh-CN.md)。
+详见主 [README](../README.zh-CN.md)（含 Releases 安装说明与 API）。
 
 ---
 

@@ -77,6 +77,8 @@ sequenceDiagram
 - **可配置扩展** — 构建时使用 **`VITE_API_BASE_URL`** 指向你的中继（必须以 **`/`** 结尾）。
 - **保活** — 断线后可按设置周期性重连 WebSocket。
 - **中继首页** — 无 `api_key` 时 `GET /` 为欢迎页；带 `?api_key=<设置里的密钥>` 可打开**内置网页对话**（可选 **`&backend=gemini`** 或 **`&backend=grok`**）。可选 `&message=…` 预填首轮用户消息。`?format=json` 或 `Accept: application/json` 返回机器可读状态与示例 `chatUrl`。
+- **统一的提供商流水线** — ChatGPT、Gemini、Grok 在扩展侧共用同一套高层阶段（接收 → 定位输入框 → 填入 → 发送 → 等待/采集 → 上报）。ChatGPT 在页面内从 **SSE** 取助手正文；Gemini / Grok 用 **DOM 轮询** 与各站启发式。
+- **中继发现 JSON** — `GET /extension/version` 返回期望的**扩展**与**中继** semver（扩展用它做更新提示）。`GET /extension/provider-phase-config` 返回阶段说明与结构化 **`providerExecutionProfile`**（超时、`postMessage` 标识、主要选择器等，**非可执行代码**）。若需要内嵌的各阶段 TypeScript 源码，加 **`?include=typescript_sources`**。
 
 ---
 
@@ -116,23 +118,39 @@ curl -sS http://127.0.0.1:3456/health
 # {"ok":true}
 ```
 
-### 3. 构建并加载扩展
+### 3. 安装 Chrome 扩展
 
-**Chrome（监听模式）：**
+任选：**GitHub Releases 的 zip**（最省事）或**本地源码构建**。
+
+#### A）GitHub Releases（推荐一般用户）
+
+1. 打开 **[BridgeGPT Releases](https://github.com/ocmuuu/BridgeGPT/releases)**，下载对应版本的 **`bridgegpt-chrome-<tag>.zip`**（CI 会为每个 **`v*`** 标签附带压缩包，例如 `bridgegpt-chrome-v1.8.0.zip`）。
+2. 在 Chrome 地址栏打开 **`chrome://extensions`**。
+3. 右上角打开 **开发者模式**。
+4. 将下载好的 **zip 拖到扩展程序页面**上完成安装。  
+   若当前 Chrome 版本不支持直接拖 zip，请**先解压**，再点 **加载已解压的扩展程序**，选择**解压后含有 `manifest.json` 的那一层目录**（即 `dist_chrome` 的内容）。
+
+**更新**：下载新版本 zip 后重复上述步骤即可覆盖安装；若使用「已解压」加载，则替换目录内文件后在 `chrome://extensions` 中点**重新加载**。
+
+#### B）从源码构建（开发者）
+
+**监听：**
 
 ```bash
 npm run dev:chrome
 ```
 
-**一次性生产构建：**
+**生产产物**（输出到 `extension/dist_chrome/`）：
 
 ```bash
 npm run build:chrome
 ```
 
-然后打开 **chrome://extensions** → 开启 **开发者模式** → **加载已解压的扩展程序** → 选择 **`extension/dist_chrome/`**。
+然后 **chrome://extensions** → **开发者模式** → **加载已解压的扩展程序** → 选择 **`extension/dist_chrome/`**。
 
-**Firefox：** 使用 `npm run dev:firefox` 或 `npm run build:firefox`，在 **`extension/dist_firefox/`** 通过 `about:debugging` 加载。
+**Firefox：** `npm run dev:firefox` 或 `npm run build:firefox`，在 **about:debugging** → **此 Firefox** → **临时加载附加组件** 中加载 **`extension/dist_firefox/`** 内的清单。
+
+Chrome zip 的自动发布流程：[.github/workflows/release-chrome-extension.yml](.github/workflows/release-chrome-extension.yml)（推送 **`v*`** 标签触发）。
 
 ### 4. 连接并获取凭据
 
@@ -268,6 +286,8 @@ VITE_API_BASE_URL=https://relay.example.com/ npm run build:chrome
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | GET | `/health` | 无 | 存活检查：`{ "ok": true }` |
+| GET | `/extension/version` | 无 | `{ "extension": "<semver>", "relay": "<semver>" }` — 期望的扩展版本与中继包版本；扩展用于更新提示 |
+| GET | `/extension/provider-phase-config` | 无 | 阶段模型、各提供商策略、内嵌 **`providerExecutionProfile`**（结构化默认说明）。可选 **`?include=typescript_sources`** 附加大体量 **`providerStepDefaults`**（各阶段 TypeScript 源码） |
 | GET | `/connect/:api_key?socketId=...` | 无 | 扩展在 Socket.IO 连上后调用；路径中的段与 HTTP 用的 **api_key** 相同 |
 | GET | `/v1/models` | Bearer / API key | 列出 `gpt-5` / `gpt-5-mini`（仅为标签；实际模型由网页会话决定） |
 | GET | `/v1/models/:modelId` | Bearer / API key | 模型元数据 |
@@ -299,6 +319,7 @@ VITE_API_BASE_URL=https://relay.example.com/ npm run build:chrome
 | `npm run dev:firefox` | Firefox 扩展开发（监听） |
 | `npm run build:chrome` | 生产构建 Chrome 扩展 → `extension/dist_chrome/` |
 | `npm run build:firefox` | 生产构建 Firefox 扩展 → `extension/dist_firefox/` |
+| `npm run gen:provider-sources` | 根据 `extension/src/pages/content/providers/*` 重新生成 `server/src/data/providerPhaseDefaultSources.json` 与 **`providerPhaseExecutionProfile.json`**（改过页面世界逻辑后请执行） |
 
 **生产环境运行中继**（构建后）：
 
@@ -346,8 +367,8 @@ npm run start -w @bridgegpt/server
 | HTTP **504** / 超时 | 目标标签页关闭、过慢或未渲染完；可调大 `RELAY_REQUEST_TIMEOUT_MS`；保持 **chatgpt.com** / **chat.openai.com**、**gemini.google.com** 或 **grok.com** 可正常完成回复。 |
 | **扩展 reload** 后每次请求都新开标签 | Service Worker 重启后内存中的 tab 映射会丢失；若首次 `sendMessage` 因内容脚本未就绪失败，扩展会按逻辑**新建标签**。可刷新已有页面或重试第二次请求。 |
 | 回复为空或异常（ChatGPT） | 站点改版后选择器可能需更新；查看对应标签页控制台。 |
-| 回复为空、重复上一轮或异常（Gemini） | 确认 **gemini.google.com** 已登录；多轮场景下扩展会按**本次 prompt** 对齐会话块，若 UI 大改需同步更新 `gemini-page` 等逻辑。 |
-| 回复为空或异常（Grok） | 确认 **grok.com** 已登录。扩展只采集**当前轮**助手正文（`#last-reply-container` 内 `.response-content-markdown`），不会把更早的气泡、用户消息或「思考」条当成回复；流式阶段过短的英文预览会等到正文稳定后再结束。站点改版后需更新 `grok-page` / `GrokWebProvider`。 |
+| 回复为空、重复上一轮或异常（Gemini） | 确认 **gemini.google.com** 已登录；多轮场景下扩展会按**本次 prompt** 对齐会话块，若 UI 大改需同步更新 `extension/src/pages/content/providers/gemini/*` 等逻辑。 |
+| 回复为空或异常（Grok） | 确认 **grok.com** 已登录。扩展只采集**当前轮**助手正文（`#last-reply-container` 内 `.response-content-markdown`），不会把更早的气泡、用户消息或「思考」条当成回复；流式阶段过短的英文预览会等到正文稳定后再结束。站点改版后需更新 `extension/src/pages/content/providers/grok/*` 与 `GrokWebProvider`。 |
 | 网页端跨域 CORS | 中继对 API 使用较宽松的 CORS；若涉及浏览器 Cookie，更推荐在**服务端**调用中继。 |
 
 ---
@@ -359,7 +380,7 @@ bridgegpt/
 ├── docs/                      # 如 [SERVER_DEPLOY.zh-CN.md](docs/SERVER_DEPLOY.zh-CN.md)
 ├── extension/                 # Vite + CRXJS（Chrome / Firefox）
 │   ├── src/pages/background/  # Service Worker、Socket.IO 客户端
-│   ├── src/pages/content/     # index.tsx（内容脚本）；chatgpt-page / gemini-page / grok-page（页面世界）与 webProviders/chatgptWeb、geminiWeb、grokWeb
+│   ├── src/pages/content/     # index.tsx（内容脚本）；*-page.ts 入口；providers/chatgpt|gemini|grok/*（页面世界）与 webProviders/*
 │   ├── src/pages/settings/    # 设置页（连接、API 地址、保活）
 │   ├── manifest.json
 │   └── package.json           # workspace: bridgegpt-extension
@@ -369,9 +390,11 @@ bridgegpt/
 │   │   ├── socket/
 │   │   │   └── extensionRelay.ts  # 待处理队列、/connect、Socket.IO
 │   │   ├── api/
+│   │   │   ├── extension/     # GET /extension/version、/extension/provider-phase-config
 │   │   │   ├── openai/        # /v1/*（对话、模型、SSE 等）
 │   │   │   ├── gemini/        # /v1beta/* Gemini 形态路由
 │   │   │   └── web/           # 各提供商网页 UI 的提示词 / 标记辅助
+│   │   ├── data/              # providerPhase*.json（构建时嵌入，复制到 dist/data）
 │   │   └── web/               # 中继首页（`GET /`）与内置对话壳
 │   └── package.json           # workspace: @bridgegpt/server
 ├── package.json               # 工作区根

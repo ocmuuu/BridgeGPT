@@ -1,4 +1,15 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Application, Request, Response } from "express";
+
+/** `server/src/data` in dev; `dist/data` after `tsc` (this file lives under `api/extension/`). */
+const SERVER_DATA_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "data"
+);
 
 /**
  * Public contract for `GET /extension/provider-phase-config`.
@@ -45,15 +56,60 @@ export type ExtensionProviderPhaseConfigBody = {
       implementationNote: string;
     }
   >;
+  /**
+   * Declarative mirror of extension page-world behavior: postMessage identities,
+   * timeouts, primary selectors, SSE/DOM strategy hints. **Not executable code**
+   * (generated with `providerPhaseExecutionProfile.json`).
+   */
+  providerExecutionProfile?: unknown;
+  /**
+   * Full TypeScript sources per provider phase (large payload). Present only when
+   * the client passes `?include=typescript_sources` on this endpoint.
+   */
+  providerStepDefaults?: unknown;
   /** Reserved for forward-compatible fields; clients should ignore unknown keys. */
   _meta?: {
     documentation: string;
   };
 };
 
-function buildBody(): ExtensionProviderPhaseConfigBody {
-  return {
-    apiVersion: 1,
+function readProviderPhaseDefaultSources(): unknown {
+  try {
+    const p = join(SERVER_DATA_DIR, "providerPhaseDefaultSources.json");
+    return JSON.parse(readFileSync(p, "utf8"));
+  } catch {
+    return undefined;
+  }
+}
+
+function readProviderPhaseExecutionProfile(): unknown {
+  try {
+    const p = join(SERVER_DATA_DIR, "providerPhaseExecutionProfile.json");
+    return JSON.parse(readFileSync(p, "utf8"));
+  } catch {
+    return undefined;
+  }
+}
+
+function wantsTypeScriptSources(req: Request): boolean {
+  const raw = req.query.include;
+  const tokens = new Set<string>();
+  const add = (s: unknown) => {
+    if (typeof s !== "string") return;
+    for (const part of s.split(/[, ]+/)) {
+      if (part) tokens.add(part);
+    }
+  };
+  add(raw);
+  if (Array.isArray(raw)) {
+    for (const item of raw) add(item);
+  }
+  return tokens.has("typescript_sources");
+}
+
+function buildBody(includeTypeScriptSources: boolean): ExtensionProviderPhaseConfigBody {
+  const base: ExtensionProviderPhaseConfigBody = {
+    apiVersion: 2,
     phaseModelVersion: 1,
     path: EXTENSION_PROVIDER_PHASE_CONFIG_PATH,
     phases: [
@@ -137,9 +193,20 @@ function buildBody(): ExtensionProviderPhaseConfigBody {
     },
     _meta: {
       documentation:
-        "Future releases may add providers.*.config (selectors, timeouts, rules). Clients that only need discovery should read apiVersion, phaseModelVersion, and providers.*.waitCaptureStrategy.",
+        "Default response includes providerExecutionProfile (structured, non-code) synced from extension providers. For embedded TypeScript per phase, request GET with query include=typescript_sources. Regenerate both JSON files via `npm run gen:provider-sources` at repo root; server build copies them into dist/data.",
     },
   };
+  const profile = readProviderPhaseExecutionProfile();
+  if (profile !== undefined) {
+    base.providerExecutionProfile = profile;
+  }
+  if (includeTypeScriptSources) {
+    const embedded = readProviderPhaseDefaultSources();
+    if (embedded !== undefined) {
+      base.providerStepDefaults = embedded;
+    }
+  }
+  return base;
 }
 
 export function registerExtensionProviderPhaseConfigRoute(
@@ -147,9 +214,9 @@ export function registerExtensionProviderPhaseConfigRoute(
 ): void {
   app.get(
     EXTENSION_PROVIDER_PHASE_CONFIG_PATH,
-    (_req: Request, res: Response) => {
+    (req: Request, res: Response) => {
       res.setHeader("Cache-Control", "public, max-age=300");
-      res.json(buildBody());
+      res.json(buildBody(wantsTypeScriptSources(req)));
     }
   );
 }

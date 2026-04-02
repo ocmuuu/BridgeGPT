@@ -6,9 +6,14 @@
  * This file is the **canonical description** — nothing imports it for runtime
  * behavior (bundles unchanged unless you choose to import it).
  *
- * Relay discovery (optional, not used by the extension yet):
- * `GET {relayBase}extension/provider-phase-config` — same phase list + per-provider
- * `waitCaptureStrategy`; see `server/src/extensionProviderPhaseConfig.ts`.
+ * Relay discovery:
+ * - `GET {relayBase}extension/version` — `{ extension, relay }` semver; background
+ *   uses this for update hints.
+ * - `GET {relayBase}extension/provider-phase-config` — phase list, strategies, and
+ *   **`providerExecutionProfile`** (structured protocol/timeouts/selectors, no code).
+ *   Full per-phase TypeScript only with `?include=typescript_sources`.
+ * Regenerate JSON via `npm run gen:provider-sources` after editing `providers/*`.
+ * See `server/src/api/extension/providerPhaseConfig.ts` and `relayVersion.ts`.
  *
  * ---
  *

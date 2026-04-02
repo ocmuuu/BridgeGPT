@@ -1,0 +1,150 @@
+{
+  "kind": "bridgegpt.provider_execution_profile",
+  "profileSchemaVersion": 1,
+  "generatedAt": "2026-04-02T04:23:35.751Z",
+  "phaseModelVersion": 1,
+  "extensionVersion": "1.8.0",
+  "about": "Structured, non-executable summary of default extension page-world behavior (wire protocol, timings, primary DOM hooks). Mirrors the shipped extension; regenerate with this script after editing providers/*.",
+  "shared": {
+    "contentScriptPostMessageSource": "bridgegpt-content-script",
+    "domPollPrimitives": {
+      "waitForDefaultIntervalMs": 120,
+      "note": "Gemini/Grok inline sleep/waitFor in provider domHelpers.ts (not shared chunks in page bundles)."
+    }
+  },
+  "providers": {
+    "chatgpt": {
+      "waitCaptureStrategy": "sse_intercept",
+      "pagePostMessage": {
+        "envelopeVersion": 1,
+        "sourcePage": "bridgegpt-chatgpt-page",
+        "contentScriptSource": "bridgegpt-content-script",
+        "runMessageType": "bridgegpt_chatgpt_run",
+        "textField": "text"
+      },
+      "resolve_composer": {
+        "composerSelectors": [
+          "[name=\"prompt-textarea\"]",
+          "#prompt-textarea"
+        ]
+      },
+      "fill": {
+        "strategy": "sync_hidden_input_and_contenteditable_innerHTML"
+      },
+      "submit": {
+        "submitDelayMs": 100,
+        "submitControlSelector": "#composer-submit-button"
+      },
+      "wait_capture": {
+        "trigger": "fetch_response_content_type_includes",
+        "contentTypeSubstring": "text/event-stream",
+        "maxSseSamples": 48,
+        "maxSampleDataLength": 2000,
+        "deltaEvents": [
+          "delta",
+          "delta_encoding"
+        ],
+        "assistantAppendPatch": {
+          "op": "append",
+          "jsonPointerMustInclude": "/message/content/parts"
+        },
+        "streamSignalsKept": 12
+      }
+    },
+    "gemini": {
+      "waitCaptureStrategy": "dom_poll",
+      "pagePostMessage": {
+        "envelopeVersion": 1,
+        "sourcePage": "bridgegpt-gemini-page",
+        "contentScriptSource": "bridgegpt-content-script",
+        "runMessageType": "bridgegpt_gemini_run",
+        "textField": "text"
+      },
+      "resolve_composer": {
+        "primarySelectorGroups": [
+          "scoped input-area / footer ql-editor (ordered)",
+          "rich-textarea combined ql-editor",
+          "rich-textarea shadowRoot ql-editor",
+          "global ql-editor / contenteditable with footer proximity"
+        ],
+        "sampleSelectors": [
+          "rich-textarea",
+          "div.ql-editor[contenteditable='true']",
+          "[contenteditable=\"true\"]",
+          "div.ql-editor[contenteditable=\"true\"], [contenteditable=\"true\"]"
+        ]
+      },
+      "fill": {
+        "strategy": "trusted_types_safe_dom_paragraphs_plus_input_events"
+      },
+      "submit": {
+        "strategy": "pointer_synthesis_and_enter_on_editor"
+      },
+      "wait_capture": {
+        "waitComposerTimeoutMs": 20000,
+        "afterFillSleepMs": 120,
+        "findSendFallbackWaitMs": 2000,
+        "pollIntervalMs": 200,
+        "maxPollTicks": 600,
+        "stableTicksWhenUiIdle": 2,
+        "stableTicksWhenBusy": 4,
+        "usesConversationScopedCapture": true,
+        "captureFields": [
+          "assistantHtml",
+          "assistantText"
+        ],
+        "sendButtonWaitPrimaryMs": 12000,
+        "sendButtonWaitRetryMs": 8000
+      }
+    },
+    "grok": {
+      "waitCaptureStrategy": "dom_poll",
+      "pagePostMessage": {
+        "envelopeVersion": 1,
+        "sourcePage": "bridgegpt-grok-page",
+        "contentScriptSource": "bridgegpt-content-script",
+        "runMessageType": "bridgegpt_grok_run",
+        "textField": "text"
+      },
+      "resolve_composer": {
+        "strategy": "prefer_prose_in_main_form_then_textarea_then_fallback"
+      },
+      "fill": {
+        "textareaVsProse": true
+      },
+      "submit": {
+        "strategy": "visible_form_submit_or_mod_enter_then_enter"
+      },
+      "wait_capture": {
+        "waitComposerTimeoutMs": 28000,
+        "waitComposerIntervalMs": 140,
+        "pollIntervalMs": 200,
+        "maxPollTicks": 600,
+        "stableTicksByReplyLength": [
+          {
+            "maxLenExclusive": 80,
+            "ticks": 12
+          },
+          {
+            "maxLenExclusive": 240,
+            "ticks": 8
+          },
+          {
+            "maxLenExclusive": null,
+            "ticks": 4
+          }
+        ],
+        "previewSnippetHeuristics": {
+          "maxReplyLenConsidered": 200,
+          "maxReplyLenForShortAsciiPreview": 180,
+          "minNonAsciiRatioForCjkPrompt": 0.15
+        },
+        "captureFields": [
+          "assistantText"
+        ],
+        "afterFillSleepProseMs": 450,
+        "afterFillSleepTextareaMs": 200
+      }
+    }
+  }
+}
