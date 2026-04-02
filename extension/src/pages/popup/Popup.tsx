@@ -1,8 +1,11 @@
 import React from "react";
 import { ConnectButton } from "../settings/components/connect";
+import { useExtensionUpdateAvailable } from "@src/hooks/useExtensionUpdateAvailable";
 import { Settings } from "lucide-react";
 
 export default function Popup() {
+  const { pending } = useExtensionUpdateAvailable();
+
   const handleEditSetting = () => {
     chrome.tabs.create({ url: "src/pages/settings/index.html" });
   };
@@ -32,14 +35,37 @@ export default function Popup() {
       <div className="px-3 pb-5 pt-0">
         <ConnectButton popup />
         <div className="flex justify-center pt-2">
-          <button
-            type="button"
-            onClick={handleEditSetting}
-            className="flex items-center gap-2 text-sm font-medium text-violet-700 hover:text-violet-900 py-1.5 px-3 rounded-lg border border-violet-200/80 bg-violet-50/80 hover:bg-violet-100/90 transition-colors dark:text-violet-300 dark:hover:text-violet-200 dark:border-violet-700/80 dark:bg-violet-950/60 dark:hover:bg-violet-900/50"
-          >
-            <Settings size={16} strokeWidth={2} />
-            <span>Open settings</span>
-          </button>
+          <div className="relative inline-flex">
+            <button
+              type="button"
+              onClick={handleEditSetting}
+              aria-describedby={
+                pending ? "popup-settings-update-hint" : undefined
+              }
+              className="flex items-center gap-2 text-sm font-medium text-violet-700 hover:text-violet-900 py-1.5 px-3 rounded-lg border border-violet-200/80 bg-violet-50/80 hover:bg-violet-100/90 transition-colors dark:text-violet-300 dark:hover:text-violet-200 dark:border-violet-700/80 dark:bg-violet-950/60 dark:hover:bg-violet-900/50"
+            >
+              <Settings size={16} strokeWidth={2} />
+              <span>Open settings</span>
+            </button>
+            {pending ? (
+              <>
+                <span
+                  id="popup-settings-update-hint"
+                  className="sr-only"
+                >
+                  A newer extension version is available; open settings for
+                  details.
+                </span>
+                <span
+                  className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5"
+                  aria-hidden
+                >
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
+                  <span className="relative m-0.5 inline-flex h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-950" />
+                </span>
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>

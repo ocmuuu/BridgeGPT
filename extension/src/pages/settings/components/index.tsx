@@ -11,6 +11,7 @@ import { ApiKeySection } from "./apiKey";
 import { ApiUrlSection } from "./apiUrl";
 import { ConnectButton } from "./connect";
 import { RelayServerSection } from "./relayServer";
+import { VersionSection } from "./versionSection";
 
 export const SettingPage = () => {
   const [keepLongConnection, setKeepLongConnection] = useState(false);
@@ -94,6 +95,8 @@ export const SettingPage = () => {
         <div className="mb-6">
           <ConnectButton />
         </div>
+
+        <VersionSection />
 
         <RelayServerSection />
 

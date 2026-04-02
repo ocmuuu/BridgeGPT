@@ -2,12 +2,14 @@ import { io } from "socket.io-client";
 import type { Socket } from "socket.io-client";
 import {
   API_KEY_STORAGE_KEY,
+  EXTENSION_UPDATE_AVAILABLE_KEY,
   generateBridgegptApiKey,
   LEGACY_ROOM_ID_STORAGE_KEY,
   RELAY_PAUSED_BY_USER_KEY,
   relayBaseFromStoredString,
   RELAY_SERVER_STORAGE_KEY,
 } from "@src/config";
+import { compareSemver } from "@src/lib/semverCompare";
 import {
   normalizeWebProviderId,
   tabUrlMatchesProvider,
@@ -38,6 +40,86 @@ const KEEP_ALIVE_ALARM = "bridgegpt-keep-alive";
 /** 30s interval expressed in minutes for chrome.alarms (fractional minutes allowed). */
 const KEEP_ALIVE_DELAY_MINUTES = 30 / 60;
 
+const EXTENSION_VERSION_CHECK_ALARM = "bridgegpt-extension-version-check";
+/** Daily check against relay `GET /version`. */
+const EXTENSION_VERSION_CHECK_PERIOD_MINUTES = 24 * 60;
+
+function scheduleExtensionVersionCheckAlarm(): void {
+  chrome.alarms.create(EXTENSION_VERSION_CHECK_ALARM, {
+    delayInMinutes: EXTENSION_VERSION_CHECK_PERIOD_MINUTES,
+    periodInMinutes: EXTENSION_VERSION_CHECK_PERIOD_MINUTES,
+  });
+}
+
+/** Toolbar action badge: "!" when relay reports a newer extension than this install. */
+async function syncExtensionUpdateBadge(): Promise<void> {
+  const { [EXTENSION_UPDATE_AVAILABLE_KEY]: v } =
+    await chrome.storage.local.get(EXTENSION_UPDATE_AVAILABLE_KEY);
+  const has = typeof v === "string" && v.length > 0;
+  await chrome.action.setBadgeBackgroundColor({ color: "#D97706" });
+  await chrome.action.setBadgeText({ text: has ? "!" : "" });
+  await chrome.action.setTitle({
+    title: has
+      ? "BridgeGPT — update available (open popup → Settings)"
+      : "BridgeGPT",
+  });
+}
+
+type ExtensionVersionCheckResult =
+  | {
+      ok: true;
+      local: string;
+      server: string;
+      status: "unchanged" | "update_available";
+    }
+  | { ok: false; error: string };
+
+async function runExtensionVersionCheck(): Promise<ExtensionVersionCheckResult> {
+  try {
+    const base = await getEffectiveRelayBaseUrl();
+    const origin = String(base).replace(/\/+$/, "");
+    const res = await fetch(`${origin}/version`, { credentials: "omit" });
+    if (!res.ok) {
+      return { ok: false, error: `Relay returned HTTP ${res.status}` };
+    }
+    const data = (await res.json()) as { extension?: unknown };
+    const serverExt =
+      typeof data.extension === "string" ? data.extension.trim() : "";
+    if (!serverExt) {
+      return { ok: false, error: "Relay /version response missing extension" };
+    }
+
+    const local =
+      typeof chrome.runtime.getManifest().version === "string"
+        ? chrome.runtime.getManifest().version
+        : "0.0.0";
+
+    if (compareSemver(serverExt, local) <= 0) {
+      await chrome.storage.local.remove([
+        EXTENSION_UPDATE_AVAILABLE_KEY,
+        "lastExtensionUpdateNotifiedVersion",
+      ]);
+      await syncExtensionUpdateBadge();
+      return { ok: true, local, server: serverExt, status: "unchanged" };
+    }
+
+    await chrome.storage.local.set({
+      [EXTENSION_UPDATE_AVAILABLE_KEY]: serverExt,
+    });
+    await syncExtensionUpdateBadge();
+    return { ok: true, local, server: serverExt, status: "update_available" };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : String(e),
+    };
+  }
+}
+
+async function checkExtensionVersionAgainstRelay(): Promise<void> {
+  await runExtensionVersionCheck();
+}
+
 let socketConnectionStatus: {
   status: "pending" | "connected" | "failed" | "disconnected";
   errorMessage?: string;
@@ -49,10 +131,13 @@ let socketConnectionStatus: {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.tabs.create({ url: "src/pages/settings/index.html" });
   syncKeepAliveFromStorage();
+  scheduleExtensionVersionCheckAlarm();
+  void checkExtensionVersionAgainstRelay();
 });
 
 chrome.runtime.onStartup.addListener(() => {
   syncKeepAliveFromStorage();
+  scheduleExtensionVersionCheckAlarm();
 });
 
 function readApiKeyFromSettings(settings: {
@@ -255,6 +340,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (RELAY_SERVER_STORAGE_KEY in changes) {
     const wasConnected = socket?.connected === true;
     disconnectWS();
+    void checkExtensionVersionAgainstRelay();
     void (async () => {
       const { keepLongConnection } = await chrome.storage.local.get(
         "keepLongConnection"
@@ -270,6 +356,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === EXTENSION_VERSION_CHECK_ALARM) {
+    void checkExtensionVersionAgainstRelay();
+    return;
+  }
   if (alarm.name !== KEEP_ALIVE_ALARM) return;
   void (async () => {
     await maybeReconnectKeepLong();
@@ -283,6 +373,13 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 syncKeepAliveFromStorage();
+scheduleExtensionVersionCheckAlarm();
+void syncExtensionUpdateBadge();
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local" || !(EXTENSION_UPDATE_AVAILABLE_KEY in changes)) return;
+  void syncExtensionUpdateBadge();
+});
 
 async function connectWS() {
   try {
@@ -348,6 +445,7 @@ async function connectWS() {
           "[BridgeGPT] Relay room registered; api_key prefix:",
           apiKey.slice(0, 20)
         );
+        void checkExtensionVersionAgainstRelay();
       } catch (e) {
         console.error("[BridgeGPT] Relay /connect fetch error:", e);
         socketConnectionStatus.status = "disconnected";
@@ -491,7 +589,8 @@ type AgentMessage =
   | { type: "connect" }
   | { type: "disconnect" }
   | { type: "get_connection_status" }
-  | { type: "reset_api_key" };
+  | { type: "reset_api_key" }
+  | { type: "check_extension_version" };
 
 chrome.runtime.onMessage.addListener(
   async (msg: AgentMessage, _sender, sendResponse) => {
@@ -530,6 +629,9 @@ chrome.runtime.onMessage.addListener(
           error: e instanceof Error ? e.message : String(e),
         });
       }
+    } else if (msg.type === "check_extension_version") {
+      const result = await runExtensionVersionCheck();
+      sendResponse(result);
     }
     return true; // Keep async messaging alive
   }

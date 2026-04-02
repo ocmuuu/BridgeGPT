@@ -1,3 +1,9 @@
+/** chrome.storage.local: relay advertises a newer extension; value is semver string. */
+export const EXTENSION_UPDATE_AVAILABLE_KEY = "extensionUpdateAvailable";
+
+export const BRIDGEGPT_GITHUB_RELEASES_URL =
+  "https://github.com/ocmuuu/BridgeGPT/releases";
+
 /** chrome.storage.local: user override; unset means use {@link DEFAULT_RELAY_BASE_URL}. */
 export const RELAY_SERVER_STORAGE_KEY = "relayServerBaseUrl";
 
