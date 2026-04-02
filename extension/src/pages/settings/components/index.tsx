@@ -23,6 +23,15 @@ export const SettingPage = () => {
     });
   }, []);
 
+  useEffect(() => {
+    if (window.location.hash !== "#extension-version") return;
+    requestAnimationFrame(() => {
+      document
+        .getElementById("extension-version")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
   const onKeepLongChange = (checked: boolean) => {
     setKeepLongConnection(checked);
     chrome.storage.local.set({ keepLongConnection: checked });

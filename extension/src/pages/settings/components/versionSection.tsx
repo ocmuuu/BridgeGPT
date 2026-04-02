@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Package } from "lucide-react";
 import { BRIDGEGPT_GITHUB_RELEASES_URL } from "@src/config";
 import { useExtensionUpdateAvailable } from "@src/hooks/useExtensionUpdateAvailable";
 
@@ -54,11 +54,59 @@ export function VersionSection() {
   };
 
   const recommendServer = pending && serverVersion ? serverVersion : null;
+  const highlight = Boolean(recommendServer);
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-xl p-4 mb-6 shadow-sm shadow-slate-900/5 dark:bg-slate-900/90 dark:border-slate-700 dark:shadow-black/20">
-      <div className="flex items-center justify-between gap-3">
-        <span className="font-mono text-base font-medium tabular-nums text-slate-900 dark:text-slate-100">
+    <section
+      id="extension-version"
+      aria-labelledby="extension-version-heading"
+      className={`rounded-xl p-5 mb-6 shadow-sm shadow-slate-900/5 dark:shadow-black/20 ${
+        highlight
+          ? "border-2 border-amber-500/90 bg-amber-50/80 ring-2 ring-amber-400/50 dark:border-amber-500/70 dark:bg-amber-950/35 dark:ring-amber-600/40"
+          : "border border-slate-200/90 bg-white dark:border-slate-700 dark:bg-slate-900/90"
+      }`}
+    >
+      <div className="flex items-start gap-3 mb-3">
+        <Package
+          className={
+            highlight
+              ? "text-amber-700 dark:text-amber-400 shrink-0"
+              : "text-slate-700 dark:text-slate-300 shrink-0"
+          }
+          size={26}
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1">
+          <h2
+            id="extension-version-heading"
+            className="text-xl font-semibold text-slate-900 dark:text-slate-100"
+          >
+            Extension version
+          </h2>
+          <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              Toolbar <span className="font-mono rounded bg-slate-200/80 px-1 py-px dark:bg-slate-700">!</span>{" "}
+              badge
+            </span>{" "}
+            and the{" "}
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              amber dot
+            </span>{" "}
+            next to{" "}
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              Open settings
+            </span>{" "}
+            in the popup both mean: your relay reports a{" "}
+            <strong>newer</strong> extension than this install.{" "}
+            <span className="text-slate-700 dark:text-slate-300">
+              This block is where that is explained.
+            </span>
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200/80 bg-white/80 px-3 py-2.5 dark:border-slate-600/80 dark:bg-slate-900/60">
+        <span className="font-mono text-base font-semibold tabular-nums text-slate-900 dark:text-slate-100">
           v{localVersion}
         </span>
         <button
@@ -89,21 +137,21 @@ export function VersionSection() {
       ) : null}
 
       {recommendServer ? (
-        <p className="mt-3 text-sm text-amber-900 dark:text-amber-100/90 leading-relaxed">
-          <span className="font-medium">Update available.</span> Relay recommends{" "}
-          <span className="font-mono">v{recommendServer}</span>. Install the latest
-          Chrome extension from{" "}
+        <p className="mt-3 text-sm text-amber-950 dark:text-amber-50/95 leading-relaxed">
+          <span className="font-semibold">Update available.</span> Relay recommends{" "}
+          <span className="font-mono font-medium">v{recommendServer}</span>. Install
+          the latest Chrome extension from{" "}
           <a
             href={BRIDGEGPT_GITHUB_RELEASES_URL}
             target="_blank"
             rel="noreferrer"
-            className="font-medium underline underline-offset-2 hover:opacity-90"
+            className="font-semibold underline underline-offset-2 hover:opacity-90"
           >
             GitHub Releases
           </a>
           .
         </p>
       ) : null}
-    </div>
+    </section>
   );
 }

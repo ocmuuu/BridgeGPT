@@ -7,7 +7,11 @@ export default function Popup() {
   const { pending } = useExtensionUpdateAvailable();
 
   const handleEditSetting = () => {
-    chrome.tabs.create({ url: "src/pages/settings/index.html" });
+    const path =
+      pending === true
+        ? "src/pages/settings/index.html#extension-version"
+        : "src/pages/settings/index.html";
+    chrome.tabs.create({ url: path });
   };
 
   return (
@@ -48,25 +52,25 @@ export default function Popup() {
               <span>Open settings</span>
             </button>
             {pending ? (
-              <>
-                <span
-                  id="popup-settings-update-hint"
-                  className="sr-only"
-                >
-                  A newer extension version is available; open settings for
-                  details.
-                </span>
-                <span
-                  className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5"
-                  aria-hidden
-                >
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
-                  <span className="relative m-0.5 inline-flex h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-950" />
-                </span>
-              </>
+              <span
+                className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5"
+                aria-hidden
+              >
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
+                <span className="relative m-0.5 inline-flex h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-950" />
+              </span>
             ) : null}
           </div>
         </div>
+        {pending ? (
+          <p
+            id="popup-settings-update-hint"
+            className="mx-auto mt-2 max-w-[14.5rem] text-center text-[11px] leading-snug text-amber-900/95 dark:text-amber-200/90"
+          >
+            Dot = <strong className="font-semibold">Extension version</strong> in
+            Settings — we scroll there when you open.
+          </p>
+        ) : null}
       </div>
     </div>
   );
