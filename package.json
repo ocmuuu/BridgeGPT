@@ -1,6 +1,6 @@
 {
   "name": "bridgegpt",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "private": true,
   "description": "BridgeGPT: browser extension + self-hosted OpenAI-compatible relay for ChatGPT (web)",
   "license": "MIT",

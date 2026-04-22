@@ -1,3 +1,4 @@
+import { resetRelaySseGateForNewRun } from "./capture";
 import { fillChatgptComposer } from "./fill";
 import { scheduleSubmitChatgpt } from "./submit";
 import { postChatgptRunAskFailure } from "./emit";
@@ -8,6 +9,7 @@ import { resolveChatgptComposer } from "./resolveComposer";
  * wait_capture = SSE in `capture.ts`; emit success via `emit.ts` there.
  */
 export function runChatgptAsk(text: string): void {
+  resetRelaySseGateForNewRun();
   const startedAt = new Date().toISOString();
   const c = resolveChatgptComposer();
   if (!c) {

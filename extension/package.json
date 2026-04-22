@@ -1,6 +1,6 @@
 {
   "name": "bridgegpt-extension",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "BridgeGPT browser extension: connect ChatGPT (web) to a self-hosted relay.",
   "license": "MIT",
   "repository": {

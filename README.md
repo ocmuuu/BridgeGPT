@@ -125,7 +125,7 @@ Pick **either** a pre-built zip from GitHub Releases **or** a local build from s
 
 #### A) GitHub Releases (simplest)
 
-1. Open **[BridgeGPT Releases](https://github.com/ocmuuu/BridgeGPT/releases)** and download **`bridgegpt-chrome-<tag>.zip`** for the version you want (the workflow attaches one zip per release tag, e.g. `bridgegpt-chrome-v1.8.1.zip`).
+1. Open **[BridgeGPT Releases](https://github.com/ocmuuu/BridgeGPT/releases)** and download **`bridgegpt-chrome-<tag>.zip`** for the version you want (the workflow attaches one zip per release tag, e.g. `bridgegpt-chrome-v1.8.2.zip`).
 2. In Chrome, go to **`chrome://extensions`**.
 3. Turn on **Developer mode** (top right).
 4. **Drag and drop** the downloaded zip onto the Extensions page to install.  

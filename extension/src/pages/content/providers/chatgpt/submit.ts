@@ -1,3 +1,4 @@
+import { prepareNextChatgptRelaySseCapture } from "./capture";
 import { postChatgptRunAskFailure } from "./emit";
 
 /** Phase: submit — deferred click so React/ChatGPT picks up input state. */
@@ -10,6 +11,7 @@ export function scheduleSubmitChatgpt(startedAt: string): void {
       postChatgptRunAskFailure("no_submit_button", startedAt);
       return;
     }
+    prepareNextChatgptRelaySseCapture();
     submitButton.click();
   }, 100);
 }

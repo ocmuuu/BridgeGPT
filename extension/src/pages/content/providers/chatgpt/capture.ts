@@ -3,6 +3,125 @@ import { chatgptPostToContent } from "./emit";
 const MAX_SSE_SAMPLES = 48;
 const MAX_DATA_LEN = 2000;
 
+type ChatgptDomCapture = {
+  assistantHtml: string;
+  assistantText: string;
+  key: string;
+};
+
+const EMPTY_DOM_CAPTURE: ChatgptDomCapture = {
+  assistantHtml: "",
+  assistantText: "",
+  key: "",
+};
+
+/**
+ * Only the SSE stream that follows `prepareNextChatgptRelaySseCapture()` (plugin
+ * submit) should emit to the content script. Otherwise every manual chat on the
+ * page would also trigger `question_answer` and `scheduleFreshChatIfTurnLimitReached`.
+ */
+let markNextEventStreamAsRelay = false;
+let relayPrepResetTimer: number | undefined;
+
+export function resetRelaySseGateForNewRun(): void {
+  markNextEventStreamAsRelay = false;
+  if (relayPrepResetTimer !== undefined) {
+    window.clearTimeout(relayPrepResetTimer);
+    relayPrepResetTimer = undefined;
+  }
+}
+
+/** Call immediately before programmatic submit so the next SSE response is treated as relay output. */
+export function prepareNextChatgptRelaySseCapture(): void {
+  resetRelaySseGateForNewRun();
+  markNextEventStreamAsRelay = true;
+  relayPrepResetTimer = window.setTimeout(() => {
+    markNextEventStreamAsRelay = false;
+    relayPrepResetTimer = undefined;
+  }, 180_000);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function normalizeAssistantText(text: string): string {
+  return text.replace(/\u200b/g, "").trim();
+}
+
+function extractPatchText(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => extractPatchText(item)).join("");
+  }
+  if (!value || typeof value !== "object") return "";
+
+  const obj = value as Record<string, unknown>;
+  const directTextKeys = ["text", "value", "content", "result"];
+  for (const key of directTextKeys) {
+    const candidate = obj[key];
+    const extracted = extractPatchText(candidate);
+    if (extracted) return extracted;
+  }
+  return "";
+}
+
+function captureAssistantMessageEl(messageEl: HTMLElement): ChatgptDomCapture {
+  const markdownRoot = messageEl.querySelector(".markdown") as HTMLElement | null;
+  const root = markdownRoot ?? messageEl;
+  const assistantHtml = markdownRoot?.innerHTML?.trim() ?? "";
+  const assistantText = normalizeAssistantText(
+    root.innerText || root.textContent || ""
+  );
+  const messageId = messageEl.getAttribute("data-message-id") ?? "";
+  const key = `${messageId}::${assistantHtml || assistantText}`;
+
+  if (!assistantHtml && !assistantText) return EMPTY_DOM_CAPTURE;
+
+  return {
+    assistantHtml,
+    assistantText,
+    key,
+  };
+}
+
+function collectLatestAssistantDomCapture(): ChatgptDomCapture {
+  const nodes = document.querySelectorAll('[data-message-author-role="assistant"]');
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const el = nodes[i];
+    if (!(el instanceof HTMLElement)) continue;
+    const capture = captureAssistantMessageEl(el);
+    if (capture.key) return capture;
+  }
+  return EMPTY_DOM_CAPTURE;
+}
+
+async function waitForAssistantDomCaptureChange(
+  previousKey: string,
+  timeoutMs: number
+): Promise<ChatgptDomCapture> {
+  const endAt = Date.now() + timeoutMs;
+  let lastSeen = EMPTY_DOM_CAPTURE;
+
+  while (Date.now() < endAt) {
+    const current = collectLatestAssistantDomCapture();
+    if (current.key) lastSeen = current;
+    if (current.key && current.key !== previousKey) return current;
+    await sleep(120);
+  }
+
+  if (lastSeen.key && lastSeen.key !== previousKey) return lastSeen;
+  return EMPTY_DOM_CAPTURE;
+}
+
+function pickPreferredAssistantText(
+  sseText: string,
+  domText: string
+): "sse" | "dom" {
+  if (domText.length > sseText.length) return "dom";
+  return "sse";
+}
+
 /**
  * Phase: wait_capture — ChatGPT wraps `fetch`, reads SSE until the stream ends,
  * then emit via `chatgptPostToContent` (success path).
@@ -18,9 +137,23 @@ export function installChatgptSseFetchCapture(): void {
       return response;
     }
 
+    const consumeRelay = markNextEventStreamAsRelay;
+    if (consumeRelay) {
+      markNextEventStreamAsRelay = false;
+      if (relayPrepResetTimer !== undefined) {
+        window.clearTimeout(relayPrepResetTimer);
+        relayPrepResetTimer = undefined;
+      }
+    }
+
+    if (!consumeRelay) {
+      return response;
+    }
+
     const clone = response.clone();
     const reader = clone.body?.getReader();
     const decoder = new TextDecoder("utf-8");
+    const beforeDomCapture = collectLatestAssistantDomCapture();
 
     let buffer = "";
     let fullAssistantMessage = "";
@@ -74,10 +207,23 @@ export function installChatgptSseFetchCapture(): void {
               if (eventName === "delta") {
                 if (Array.isArray(obj.v)) {
                   for (const patch of obj.v) {
-                    if (patch.p && patch.o === "append" && patch.v) {
-                      if (patch.p.includes("/message/content/parts")) {
-                        fullAssistantMessage += patch.v;
-                        deltaPatchCount += 1;
+                    if (
+                      patch &&
+                      typeof patch === "object" &&
+                      patch.p &&
+                      patch.v
+                    ) {
+                      const path = String(patch.p);
+                      const op = String(patch.o ?? "");
+                      if (
+                        path.includes("/message/content") &&
+                        (op === "append" || op === "replace" || op === "add")
+                      ) {
+                        const patchText = extractPatchText(patch.v);
+                        if (patchText) {
+                          fullAssistantMessage += patchText;
+                          deltaPatchCount += 1;
+                        }
                       }
                     }
                   }
@@ -110,9 +256,22 @@ export function installChatgptSseFetchCapture(): void {
         }
       }
 
-      const assistantText = fullAssistantMessage.trim();
+      const sseAssistantText = fullAssistantMessage.trim();
+      const domCapture = await waitForAssistantDomCaptureChange(
+        beforeDomCapture.key,
+        3000
+      );
+      const preferredSource = pickPreferredAssistantText(
+        sseAssistantText,
+        domCapture.assistantText
+      );
+      const assistantText =
+        preferredSource === "dom" && domCapture.assistantText
+          ? domCapture.assistantText
+          : sseAssistantText;
 
       chatgptPostToContent({
+        assistantHtml: domCapture.assistantHtml,
         assistantText,
         page: {
           href: typeof location !== "undefined" ? location.href : "",
@@ -124,6 +283,9 @@ export function installChatgptSseFetchCapture(): void {
           sseSampleCount: sseSamples.length,
           sseSamples,
           streamSignals: streamSignals.slice(-12),
+          assistantTextSource: preferredSource,
+          sseAssistantTextLength: sseAssistantText.length,
+          domAssistantTextLength: domCapture.assistantText.length,
         },
       });
     }

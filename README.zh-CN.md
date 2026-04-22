@@ -125,7 +125,7 @@ curl -sS http://127.0.0.1:3456/health
 
 #### A）GitHub Releases（推荐一般用户）
 
-1. 打开 **[BridgeGPT Releases](https://github.com/ocmuuu/BridgeGPT/releases)**，下载对应版本的 **`bridgegpt-chrome-<tag>.zip`**（CI 会为每个 **`v*`** 标签附带压缩包，例如 `bridgegpt-chrome-v1.8.1.zip`）。
+1. 打开 **[BridgeGPT Releases](https://github.com/ocmuuu/BridgeGPT/releases)**，下载对应版本的 **`bridgegpt-chrome-<tag>.zip`**（CI 会为每个 **`v*`** 标签附带压缩包，例如 `bridgegpt-chrome-v1.8.2.zip`）。
 2. 在 Chrome 地址栏打开 **`chrome://extensions`**。
 3. 右上角打开 **开发者模式**。
 4. 将下载好的 **zip 拖到扩展程序页面**上完成安装。  
