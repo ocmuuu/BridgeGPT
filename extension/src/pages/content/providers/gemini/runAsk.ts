@@ -19,8 +19,16 @@ import {
   waitForGeminiEnabledSendButton,
 } from "./submit";
 
-/** Orchestrates resolve → fill → submit → wait_capture → emit. */
-export async function runGeminiAsk(text: string): Promise<void> {
+/**
+ * Serial queue: concurrent relay requests are processed one-at-a-time.
+ */
+let _runQueue: Promise<void> = Promise.resolve();
+
+export function runGeminiAsk(text: string): void {
+  _runQueue = _runQueue.then(() => _doRunGeminiAsk(text)).catch(() => {});
+}
+
+async function _doRunGeminiAsk(text: string): Promise<void> {
   const captureBase: Record<string, unknown> = {
     startedAt: new Date().toISOString(),
   };
@@ -89,11 +97,19 @@ export async function runGeminiAsk(text: string): Promise<void> {
   let stableTicks = 0;
   const maxTicks = 600;
   const pollMs = 200;
+  /**
+   * Prefer prompt-based lookup; fall back to global when the DOM text of
+   * the user bubble diverges from the raw prompt (e.g. markdown backticks
+   * rendered as <code> elements strip the backtick characters).
+   */
   const promptNorm = normalizeGeminiChatPrompt(text);
-  const pickCapture = () =>
-    promptNorm
-      ? collectGeminiModelReplyForPrompt(text)
-      : collectGeminiModelReplyGlobal();
+  const pickCapture = () => {
+    if (promptNorm) {
+      const byPrompt = collectGeminiModelReplyForPrompt(text);
+      if (geminiCaptureKey(byPrompt)) return byPrompt;
+    }
+    return collectGeminiModelReplyGlobal();
+  };
   const pickIdle = () =>
     promptNorm ? isGeminiMarkdownIdleForPrompt(text) : false;
 

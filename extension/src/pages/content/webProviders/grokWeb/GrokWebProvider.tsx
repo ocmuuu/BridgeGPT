@@ -6,62 +6,75 @@ import type {
 } from "../../shared/relayTypes";
 
 /**
+ * Content side of Grok — same content-script queue pattern as ChatGPT:
+ * deduplicate, serialize, advance only after result is delivered.
+ *
  * @see `../../shared/providerPhaseModel.ts` — phase definitions.
  */
+const PAGE_SCRIPT_SOURCE = "bridgegpt-grok-page";
 const CONTENT_SOURCE = "bridgegpt-content-script";
 const RUN_TYPE = "bridgegpt_grok_run";
 
+type PendingAsk = { text: string; route: string; body: unknown };
+
 export const GrokWebProvider = () => {
-  console.log("[BridgeGPT] Grok provider loaded");
-
-  const lastRelayRef = useRef<{ route: string; body: unknown } | null>(null);
   const pageScriptReadyRef = useRef(false);
-
-  const runLastScript = (payload: unknown) => {
-    if (payload === null || payload === undefined) return;
-
-    const base: QuestionAnswerPayload =
-      typeof payload === "object" &&
-      payload !== null &&
-      !Array.isArray(payload)
-        ? { ...(payload as QuestionAnswerPayload) }
-        : { assistantText: String(payload), version: 1 };
-
-    const hasAssistant =
-      typeof base.assistantText === "string" &&
-      base.assistantText.trim() !== "";
-
-    if (!hasAssistant && typeof base.capture !== "object") {
-      return;
-    }
-
-    base.extensionMeta = {
-      contentScriptCapturedAt: new Date().toISOString(),
-    };
-
-    const relay = lastRelayRef.current;
-    if (relay) {
-      base.relayRequest = { route: relay.route, body: relay.body };
-    }
-
-    chrome.runtime.sendMessage(
-      { type: "question_answer", content: base },
-      () => {
-        void chrome.runtime.lastError;
-        scheduleFreshChatIfTurnLimitReached("grok", hasAssistant);
-      }
-    );
-  };
+  const currentRelayRef = useRef<{ route: string; body: unknown } | null>(null);
+  const queueRef = useRef<PendingAsk[]>([]);
+  const processingRef = useRef(false);
+  const currentTextRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const processNext = () => {
+      const next = queueRef.current.shift();
+      if (!next) {
+        processingRef.current = false;
+        currentTextRef.current = null;
+        return;
+      }
+      processingRef.current = true;
+      currentTextRef.current = next.text;
+      currentRelayRef.current = { route: next.route, body: next.body };
+      window.postMessage(
+        { source: CONTENT_SOURCE, type: RUN_TYPE, text: next.text },
+        "*"
+      );
+    };
+
     const onWindowMessage = (event: MessageEvent) => {
       if (event.source !== window) return;
       const { data } = (event.data || {}) as { data?: unknown };
-      if (data && typeof data === "object" && data !== null) {
-        const src = (data as { source?: unknown }).source;
-        if (src !== "bridgegpt-grok-page") return;
+      if (!data || typeof data !== "object" || data === null) return;
+      const src = (data as { source?: unknown }).source;
+      if (src !== PAGE_SCRIPT_SOURCE) return;
+
+      const base: QuestionAnswerPayload = {
+        ...(data as QuestionAnswerPayload),
+      };
+
+      const hasAssistant =
+        typeof base.assistantText === "string" &&
+        base.assistantText.trim() !== "";
+
+      if (!hasAssistant && typeof base.capture !== "object") {
+        processNext();
+        return;
       }
-      runLastScript(data);
+
+      base.extensionMeta = {
+        contentScriptCapturedAt: new Date().toISOString(),
+      };
+      const relay = currentRelayRef.current;
+      if (relay) base.relayRequest = { route: relay.route, body: relay.body };
+
+      chrome.runtime.sendMessage(
+        { type: "question_answer", content: base },
+        () => {
+          void chrome.runtime.lastError;
+          scheduleFreshChatIfTurnLimitReached("grok", hasAssistant);
+          processNext();
+        }
+      );
     };
 
     const onRuntimeMessage = (
@@ -69,15 +82,12 @@ export const GrokWebProvider = () => {
       _sender: chrome.runtime.MessageSender,
       sendResponse: (r?: unknown) => void
     ): boolean => {
-      if (msg.type !== "ask_question" || !msg.content) {
-        return false;
-      }
+      if (msg.type !== "ask_question" || !msg.content) return false;
       if (!pageScriptReadyRef.current) {
         sendResponse({ ok: false, reason: "grok_page_script_not_ready" });
         return false;
       }
       const c = msg.content;
-      lastRelayRef.current = { route: c.route, body: c.body };
       const text =
         typeof c.promptForChatgpt === "string" ? c.promptForChatgpt.trim() : "";
       if (!text) {
@@ -85,23 +95,35 @@ export const GrokWebProvider = () => {
         return false;
       }
 
-      window.postMessage(
-        { source: CONTENT_SOURCE, type: RUN_TYPE, text },
-        "*"
-      );
+      const alreadyActive = text === currentTextRef.current;
+      const alreadyQueued = queueRef.current.some((r) => r.text === text);
+      if (!alreadyActive && !alreadyQueued) {
+        queueRef.current.push({ text, route: c.route, body: c.body });
+      }
+
+      if (!processingRef.current) processNext();
       sendResponse({ ok: true });
       return false;
     };
 
     chrome.runtime.onMessage.addListener(onRuntimeMessage);
 
-    const script = document.createElement("script");
-    script.src = chrome.runtime.getURL("grok-page.js");
-    document.body.appendChild(script);
-    script.onload = () => {
+    const scriptSrc = chrome.runtime.getURL("grok-page.js");
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${CSS.escape(scriptSrc)}"]`
+    );
+    if (existing) {
       pageScriptReadyRef.current = true;
       window.addEventListener("message", onWindowMessage);
-    };
+    } else {
+      const script = document.createElement("script");
+      script.src = scriptSrc;
+      document.body.appendChild(script);
+      script.onload = () => {
+        pageScriptReadyRef.current = true;
+        window.addEventListener("message", onWindowMessage);
+      };
+    }
 
     return () => {
       window.removeEventListener("message", onWindowMessage);

@@ -11,7 +11,16 @@ import { grokPostToContent } from "./emit";
 import { pickGrokComposer } from "./resolveComposer";
 import { submitGrokFilled } from "./submit";
 
-export async function runGrokAsk(text: string): Promise<void> {
+/**
+ * Serial queue: concurrent relay requests are processed one-at-a-time.
+ */
+let _runQueue: Promise<void> = Promise.resolve();
+
+export function runGrokAsk(text: string): void {
+  _runQueue = _runQueue.then(() => _doRunGrokAsk(text)).catch(() => {});
+}
+
+async function _doRunGrokAsk(text: string): Promise<void> {
   const captureBase: Record<string, unknown> = {
     startedAt: new Date().toISOString(),
   };
