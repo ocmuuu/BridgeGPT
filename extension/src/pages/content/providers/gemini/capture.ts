@@ -24,6 +24,30 @@ function resolveAssistantMarkdownPanel(el: HTMLElement): HTMLElement | null {
   return inner instanceof HTMLElement ? inner : null;
 }
 
+function responseContainerFor(el: Element): Element {
+  return (
+    el.closest(
+      "response-container, .response-container, div.conversation-container"
+    ) ?? el
+  );
+}
+
+function hasGeminiResponseActions(root: Element): boolean {
+  return !!root.querySelector(
+    [
+      'message-actions button[data-test-id="copy-button"]',
+      'message-actions button[data-test-id="thumb-up-button"]',
+      'message-actions button[data-test-id="thumb-down-button"]',
+      'message-actions button[data-test-id="regenerate-button"]',
+      'button[data-test-id="copy-button"]',
+      'button[data-test-id="thumb-up-button"]',
+      'button[data-test-id="thumb-down-button"]',
+      'button[data-test-id="regenerate-button"]',
+      ".response-footer.complete",
+    ].join(",")
+  );
+}
+
 function lastNonEmptyAssistantCapture(
   nodes: Iterable<Element>
 ): GeminiAssistantCapture {
@@ -113,6 +137,13 @@ export function isGeminiMarkdownIdleForPrompt(prompt: string): boolean {
   return root.getAttribute("aria-busy") !== "true";
 }
 
+export function isGeminiResponseCompleteForPrompt(prompt: string): boolean {
+  const c = findConversationForPrompt(prompt);
+  if (!c) return false;
+  const root = responseContainerFor(c);
+  return hasGeminiResponseActions(root);
+}
+
 export function collectGeminiModelReplyGlobal(): GeminiAssistantCapture {
   const chains: string[] = [
     'model-response .markdown[aria-live="polite"]',
@@ -131,4 +162,26 @@ export function collectGeminiModelReplyGlobal(): GeminiAssistantCapture {
   return lastNonEmptyAssistantCapture(
     document.querySelectorAll("message-content")
   );
+}
+
+export function isGeminiResponseCompleteGlobal(): boolean {
+  const nodes = document.querySelectorAll(
+    [
+      "response-container",
+      ".response-container",
+      "model-response",
+      '[class*="model-response-text"]',
+      "message-content",
+    ].join(",")
+  );
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const el = nodes[i];
+    if (!(el instanceof HTMLElement)) continue;
+    const panel = resolveAssistantMarkdownPanel(el);
+    if (!panel) continue;
+    const cap = assistantRootToCapture(panel);
+    if (!geminiCaptureKey(cap)) continue;
+    return hasGeminiResponseActions(responseContainerFor(el));
+  }
+  return false;
 }

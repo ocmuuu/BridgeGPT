@@ -40,6 +40,24 @@ function assistantMessageInSection(section: Element): HTMLElement | null {
   return el instanceof HTMLElement ? el : null;
 }
 
+function assistantTurnRoot(messageEl: HTMLElement): Element {
+  return (
+    messageEl.closest(
+      'section[data-turn="assistant"], section[data-testid^="conversation-turn-"], .agent-turn'
+    ) ?? messageEl
+  );
+}
+
+function hasAssistantResponseActions(root: Element): boolean {
+  return !!root.querySelector(
+    [
+      'button[data-testid="copy-turn-action-button"]',
+      'button[data-testid="good-response-turn-action-button"]',
+      'button[data-testid="bad-response-turn-action-button"]',
+    ].join(",")
+  );
+}
+
 function userTextFromSection(section: Element): string {
   const userEl = section.querySelector('[data-message-author-role="user"]');
   if (!(userEl instanceof HTMLElement)) return "";
@@ -112,9 +130,10 @@ export function collectChatgptAssistantReplyGlobal(): ChatgptAssistantCapture {
 export function isChatgptAssistantIdleForPrompt(prompt: string): boolean {
   const pair = findTurnSectionsForPrompt(prompt);
   if (!pair || !pair.assistant) return false;
-  return !!pair.assistant.querySelector(
-    'button[data-testid="copy-turn-action-button"]'
-  );
+  const msgEl = assistantMessageInSection(pair.assistant);
+  if (!msgEl) return false;
+  const root = assistantTurnRoot(msgEl);
+  return hasAssistantResponseActions(root);
 }
 
 export function isChatgptAssistantIdleGlobal(): boolean {
@@ -126,16 +145,14 @@ export function isChatgptAssistantIdleGlobal(): boolean {
     '[data-message-streaming="true"], [data-is-streaming="true"]'
   );
   if (streaming) return false;
-  /**
-   * IMPORTANT: the user-message bubble also has data-testid="copy-turn-action-button".
-   * A global document query would return true immediately (before generation even
-   * starts), causing needStable=2 and premature capture.
-   * Only look inside the LAST assistant section to avoid that false positive.
-   */
-  const assistantSections = document.querySelectorAll(
-    'section[data-turn="assistant"]'
+  const assistantMessages = document.querySelectorAll(
+    '[data-message-author-role="assistant"]'
   );
-  if (!assistantSections.length) return false;
-  const last = assistantSections[assistantSections.length - 1];
-  return !!last.querySelector('button[data-testid="copy-turn-action-button"]');
+  for (let i = assistantMessages.length - 1; i >= 0; i--) {
+    const msgEl = assistantMessages[i];
+    if (!(msgEl instanceof HTMLElement)) continue;
+    const root = assistantTurnRoot(msgEl);
+    return hasAssistantResponseActions(root);
+  }
+  return false;
 }

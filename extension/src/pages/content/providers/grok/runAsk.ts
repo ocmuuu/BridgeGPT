@@ -3,6 +3,7 @@ import {
   collectGrokLatestAssistantPlain,
   grokStableTicksNeeded,
   isGrokAssistantBoilerplate,
+  isGrokLatestAssistantResponseComplete,
   isLikelyGrokPreviewSnippet,
   normalizeGrokChat,
 } from "./capture";
@@ -67,7 +68,13 @@ async function _doRunGrokAsk(text: string): Promise<void> {
     }
     const needStable = grokStableTicksNeeded(cur.length);
     const previewSnip = isLikelyGrokPreviewSnippet(text, cur);
-    if (stableTicks >= needStable && cur.length > 0 && !previewSnip) {
+    const isComplete = isGrokLatestAssistantResponseComplete();
+    if (
+      isComplete &&
+      stableTicks >= needStable &&
+      cur.length > 0 &&
+      !previewSnip
+    ) {
       grokPostToContent({
         assistantText: cur,
         capture: {
@@ -75,6 +82,7 @@ async function _doRunGrokAsk(text: string): Promise<void> {
           completedAt: new Date().toISOString(),
           stableTicks,
           pollTicks: i,
+          isComplete,
         },
         page: { href: location.href, title: document.title },
       });

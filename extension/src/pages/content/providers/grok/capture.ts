@@ -23,6 +23,18 @@ function isInsideThinkingUi(el: HTMLElement): boolean {
   return !!el.closest(".thinking-container");
 }
 
+function responseRootFor(el: HTMLElement): HTMLElement | null {
+  const root = el.closest('div[id^="response-"]');
+  return root instanceof HTMLElement ? root : null;
+}
+
+function hasGrokResponseActions(root: HTMLElement): boolean {
+  const actions = root.querySelector(".action-buttons");
+  if (!(actions instanceof HTMLElement)) return false;
+  if (actions.classList.contains("last-response")) return true;
+  return actions.querySelectorAll("button").length >= 3;
+}
+
 export function isGrokAssistantBoilerplate(text: string): boolean {
   const t = text.trim();
   if (!t) return true;
@@ -99,6 +111,23 @@ export function collectGrokLatestAssistantPlain(promptNorm: string): string {
     }
   }
   return best ? (best.innerText || "").trim() : "";
+}
+
+export function isGrokLatestAssistantResponseComplete(): boolean {
+  const messages = document.querySelectorAll('[data-testid="assistant-message"]');
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const el = messages[i];
+    if (!(el instanceof HTMLElement)) continue;
+    if (isInsideThinkingUi(el)) continue;
+    const root = responseRootFor(el);
+    if (!root || root.classList.contains("items-end")) continue;
+    const content = root.querySelector(".response-content-markdown");
+    if (!(content instanceof HTMLElement)) continue;
+    const text = (content.innerText || "").trim();
+    if (!text || isGrokAssistantBoilerplate(text)) continue;
+    return hasGrokResponseActions(root);
+  }
+  return false;
 }
 
 export function isLikelyGrokPreviewSnippet(prompt: string, reply: string): boolean {

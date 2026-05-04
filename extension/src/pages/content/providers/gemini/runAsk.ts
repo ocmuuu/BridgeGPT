@@ -3,7 +3,8 @@ import {
   collectGeminiModelReplyForPrompt,
   collectGeminiModelReplyGlobal,
   geminiCaptureKey,
-  isGeminiMarkdownIdleForPrompt,
+  isGeminiResponseCompleteForPrompt,
+  isGeminiResponseCompleteGlobal,
   normalizeGeminiChatPrompt,
   type GeminiAssistantCapture,
 } from "./capture";
@@ -87,16 +88,6 @@ async function _doRunGeminiAsk(text: string): Promise<void> {
   if (near && !isGeminiSendButtonDisabled(near)) {
     btn = near;
   }
-  await submitGeminiComposer(editable, btn);
-
-  let lastKey = "";
-  let lastCapture: GeminiAssistantCapture = {
-    assistantHtml: "",
-    assistantText: "",
-  };
-  let stableTicks = 0;
-  const maxTicks = 600;
-  const pollMs = 200;
   /**
    * Prefer prompt-based lookup; fall back to global when the DOM text of
    * the user bubble diverges from the raw prompt (e.g. markdown backticks
@@ -110,22 +101,38 @@ async function _doRunGeminiAsk(text: string): Promise<void> {
     }
     return collectGeminiModelReplyGlobal();
   };
-  const pickIdle = () =>
-    promptNorm ? isGeminiMarkdownIdleForPrompt(text) : false;
+  const pickComplete = () =>
+    promptNorm
+      ? isGeminiResponseCompleteForPrompt(text) ||
+        isGeminiResponseCompleteGlobal()
+      : isGeminiResponseCompleteGlobal();
+
+  const beforeKey = geminiCaptureKey(pickCapture());
+
+  await submitGeminiComposer(editable, btn);
+
+  let lastKey = "";
+  let lastCapture: GeminiAssistantCapture = {
+    assistantHtml: "",
+    assistantText: "",
+  };
+  let stableTicks = 0;
+  const maxTicks = 600;
+  const pollMs = 200;
 
   for (let i = 0; i < maxTicks; i++) {
     await sleep(pollMs);
     const cap = pickCapture();
     const key = geminiCaptureKey(cap);
+    if (!key || key === beforeKey) continue;
     if (key) lastCapture = cap;
     if (key && key === lastKey) stableTicks += 1;
     else {
       stableTicks = 0;
       lastKey = key;
     }
-    const uiIdle = pickIdle();
-    const needStable = uiIdle ? 2 : 4;
-    if (stableTicks >= needStable && key.length > 0) {
+    const isComplete = pickComplete();
+    if (isComplete && stableTicks >= 3 && key.length > 0) {
       geminiPostToContent({
         assistantHtml: cap.assistantHtml,
         assistantText: cap.assistantText,
@@ -134,7 +141,7 @@ async function _doRunGeminiAsk(text: string): Promise<void> {
           completedAt: new Date().toISOString(),
           stableTicks,
           pollTicks: i,
-          uiIdle,
+          isComplete,
         },
         page: { href: location.href, title: document.title },
       });

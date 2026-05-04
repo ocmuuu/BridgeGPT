@@ -57,7 +57,7 @@ async function _doRunChatgptAsk(text: string): Promise<void> {
     }
     return collectChatgptAssistantReplyGlobal();
   };
-  const pickIdle = (): boolean => isChatgptAssistantIdleGlobal();
+  const pickComplete = (): boolean => isChatgptAssistantIdleGlobal();
 
   const before = pickCapture();
   const beforeKey = chatgptCaptureKey(before);
@@ -89,9 +89,8 @@ async function _doRunChatgptAsk(text: string): Promise<void> {
       stableTicks = 0;
       lastKey = key;
     }
-    const uiIdle = pickIdle();
-    const needStable = uiIdle ? 3 : 8;
-    if (stableTicks >= needStable && cap.assistantText.length > 0) {
+    const isComplete = pickComplete();
+    if (isComplete && stableTicks >= 3 && cap.assistantText.length > 0) {
       chatgptPostToContent({
         assistantHtml: cap.assistantHtml,
         assistantText: cap.assistantText,
@@ -104,7 +103,7 @@ async function _doRunChatgptAsk(text: string): Promise<void> {
           completedAt: new Date().toISOString(),
           stableTicks,
           pollTicks: i,
-          uiIdle,
+          isComplete,
         },
       });
       return;
